@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'screens/login_screen.dart';
 
-import 'screens/budget_screen.dart';
-//new code
-void main() {
-  runApp(const MyPantryPrototype());
+void main()
+{
+  runApp(const MyApp());
 }
 
-class MyPantryPrototype extends StatelessWidget {
-  const MyPantryPrototype({super.key});
+class MyApp extends StatelessWidget
+{
+  const MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context)
+  {
     return MaterialApp(
-      title: 'My Pantry - Budget Prototype',
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const BudgetScreen(),
+      title: 'My Pantry',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const LoginScreen(),
     );
   }
-}//random comment
+}
