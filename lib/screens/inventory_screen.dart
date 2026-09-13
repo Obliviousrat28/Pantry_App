@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
-import 'item_add_dialog.dart';
+import '../widgets/item_add_dialog.dart';
 import '../widgets/item_card.dart';
 
 class InventoryScreen extends StatefulWidget {
