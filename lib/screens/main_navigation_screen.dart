@@ -1,0 +1,44 @@
+import 'package:flutter/material.dart';
+import '../widgets/bottom_nav_bar.dart';
+//import 'home_screen.dart';
+import 'budget_screen.dart';
+import 'inventory_screen.dart';
+
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
+
+  @override
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
+}
+
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  int _currentIndex = 0;
+
+  // List of your 4 screen widgets
+  final List<Widget> _screens = [
+    // until a home screen is implemented, use placeholders for the other screens
+    // and the budget screen is the home screen for now
+    //const HomeScreen(),
+    const InventoryScreen(),
+    const BudgetScreen(),
+    const Center(child: Text('Recipe Screen Placeholder')),
+    const Center(child: Text('Settings Screen Placeholder')),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Shows the selected screen as the body
+      body: _screens[_currentIndex],
+      // Bottom nav bar stays fixed at the bottom across all tabs
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+    );
+  }
+}
