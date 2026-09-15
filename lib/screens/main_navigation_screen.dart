@@ -3,6 +3,11 @@ import '../widgets/bottom_nav_bar.dart';
 //import 'home_screen.dart';
 import 'budget_screen.dart';
 import 'inventory_screen.dart';
+//add this to add your screen to the app idk how you guys have made your UIs and screen
+//change these to suit your screens and other stuff
+//import 'recipe_screen.dart';
+//import 'recipe_details_screen.dart';
+//import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

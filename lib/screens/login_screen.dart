@@ -4,6 +4,7 @@ import '../widgets/login/login_password_field.dart';
 import '../widgets/login/login_error_message.dart';
 import '../services/login_validation.dart';
 import 'signup_screen.dart';
+import '../screens/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget
 {
@@ -30,9 +31,17 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (errorMessage.isEmpty)
     {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login successful!')),
       );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      });
     }
   }
 

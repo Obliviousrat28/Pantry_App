@@ -20,11 +20,12 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
   late TextEditingController nameController;
   late TextEditingController qtyController;
   late TextEditingController priceController;
-  late String selectedZone;
+  
+  // 1. Change selectedZone type from String to StorageZone enum directly
+  late StorageZone selectedZone;
+  
   DateTime? selectedDate;
   bool isPriceUnknown = false;
-
-  final List<String> storageZones = ['Fridge', 'Pantry', 'Freezer'];
 
   @override
   void initState() {
@@ -42,9 +43,9 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
           ? widget.initialData!.price.toString()
           : '',
     );
-    selectedZone = widget.initialData?.storageZone.displayName ?? 'Fridge';
     
-    // Set default date to today so selectedDate is never null
+    // 2. Default directly to the enum value
+    selectedZone = widget.initialData?.storageZone ?? StorageZone.FRIDGE;
     selectedDate = widget.initialData?.expiryDate ?? DateTime.now();
     isPriceUnknown = widget.initialData?.priceUnknown ?? false;
   }
@@ -99,19 +100,21 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
               ],
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: selectedZone,
+            
+            // 3. Strongly typed Dropdown matching StorageZone enum values
+            DropdownButtonFormField<StorageZone>(
+              value: selectedZone,
               decoration: const InputDecoration(
                 labelText: 'Storage Zone',
                 border: OutlineInputBorder(),
               ),
-              items: storageZones.map((String zone) {
-                return DropdownMenuItem<String>(
+              items: StorageZone.values.map((StorageZone zone) {
+                return DropdownMenuItem<StorageZone>(
                   value: zone,
-                  child: Text(zone),
+                  child: Text(zone.displayName),
                 );
               }).toList(),
-              onChanged: (String? newValue) {
+              onChanged: (StorageZone? newValue) {
                 if (newValue != null) {
                   setState(() {
                     selectedZone = newValue;
@@ -119,8 +122,8 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
                 }
               },
             ),
+            
             const SizedBox(height: 16),
-            // RESTORED DATE PICKER UI
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -159,11 +162,9 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            // Validation check
             if (nameController.text.isEmpty ||
                 qtyController.text.isEmpty ||
                 selectedDate == null) {
-              print('>>> VALIDATION ERROR: Please fill all fields <<<');
               return;
             }
 
@@ -178,10 +179,8 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
               price: isPriceUnknown ? 0.0 : parsedPrice,
               priceUnknown: isPriceUnknown,
               expiryDate: selectedDate!,
-              storageZone: StorageZone.values.firstWhere(
-                (z) => z.displayName == selectedZone,
-                orElse: () => StorageZone.FRIDGE,
-              ),
+              // 4. Pass selectedZone enum directly (no matching string lookup required)
+              storageZone: selectedZone,
             );
 
             widget.onAddItem(newItem);
