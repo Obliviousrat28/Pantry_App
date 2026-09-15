@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
-import 'add_item_widget.dart';
+import '../models/inventory_item.dart';
+import '../models/storage_zone.dart';
 
 //***** AI CAMERA FEATURE - START *****
 // StorageZone is defined further down under Add Item, but is used
@@ -49,12 +50,12 @@ class RecognizedItem {
   }) {
     return InventoryItem(
       itemId: DateTime.now().millisecondsSinceEpoch.toString(),
-      userId: userId,
+      userId: userId ?? 'user_1',
       itemName: suggestedName,
       itemQuantity: suggestedQuantity.toDouble(),
       priceUnknown: price == null,
-      itemPrice: price,
-      expiryDate: expiryDate,
+      price: price ?? 0.0,
+      expiryDate: expiryDate ?? DateTime.now(),
       storageZone: storageZone,
     );
   }
