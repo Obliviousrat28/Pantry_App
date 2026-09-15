@@ -53,4 +53,28 @@ class InventoryItem {
     final difference = expiry.difference(today).inDays;
     return difference >= 0 && difference <= 3;
   }
+
+  Map<String, dynamic> toJson() => {
+    'itemId': itemId,
+    'userId': userId,
+    'itemName': itemName,
+    'itemQuantity': itemQuantity,
+    'price': price,
+    'priceUnknown': priceUnknown,
+    'expiryDate': expiryDate.toIso8601String(),
+    'storageZone': storageZone.name,
+    'barcode': barcode,
+  };
+
+  factory InventoryItem.fromJson(Map<String, dynamic> json) => InventoryItem(
+    itemId: json['itemId'],
+    userId: json['userId'],
+    itemName: json['itemName'],
+    itemQuantity: (json['itemQuantity'] as num).toDouble(),
+    price: (json['price'] as num).toDouble(),
+    priceUnknown: json['priceUnknown'] ?? false,
+    expiryDate: DateTime.parse(json['expiryDate']),
+    storageZone: StorageZone.values.byName(json['storageZone']),
+    barcode: json['barcode'],
+  );
 }

@@ -25,7 +25,7 @@ class AddItemFormState extends State<AddItemForm> {
   late TextEditingController qtyController;
   late TextEditingController priceController;
 
-  StorageZone _selectedZone = StorageZone.FRIDGE;
+  StorageZone _selectedZone = StorageZone.fridge;
   DateTime? selectedDate;
   bool isPriceUnknown = false;
   String? _scannedBarcode;
@@ -48,7 +48,7 @@ class AddItemFormState extends State<AddItemForm> {
           ? widget.initialData!.price.toString()
           : '',
     );
-    _selectedZone = widget.initialData?.storageZone ?? StorageZone.FRIDGE;
+    _selectedZone = widget.initialData?.storageZone ?? StorageZone.fridge;
     selectedDate = widget.initialData?.expiryDate ?? DateTime.now();
     isPriceUnknown = widget.initialData?.priceUnknown ?? false;
     _scannedBarcode = widget.initialData?.barcode;
