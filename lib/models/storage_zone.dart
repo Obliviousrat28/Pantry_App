@@ -1,7 +1,17 @@
+import 'package:hive/hive.dart';
+
+part 'storage_zone.g.dart';
+
+@HiveType(typeId: 2)
 enum StorageZone {
-  fridge,
-  freezer,
+  @HiveField(0)
   pantry,
+
+  @HiveField(1)
+  fridge,
+
+  @HiveField(2)
+  freezer,
 }
 
 extension StorageZoneExtension on StorageZone {

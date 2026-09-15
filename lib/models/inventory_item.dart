@@ -1,15 +1,36 @@
+import 'package:hive/hive.dart';
 import 'storage_zone.dart';
 
-class InventoryItem {
-  final String itemId; 
-  final String userId; 
+part 'inventory_item.g.dart'; // Must match this filename
+
+@HiveType(typeId: 0)
+class InventoryItem extends HiveObject {
+  @HiveField(0)
+  final String itemId;
+
+  @HiveField(1)
+  final String userId;
+
+  @HiveField(2)
   String itemName;
+
+  @HiveField(3)
   double itemQuantity;
+
+  @HiveField(4)
   double price;
+
+  @HiveField(5)
   bool priceUnknown;
+
+  @HiveField(6)
   DateTime expiryDate;
+
+  @HiveField(7)
   StorageZone storageZone;
-  final String? barcode; // Added from teammate's code
+
+  @HiveField(8)
+  final String? barcode;
 
   InventoryItem({
     required this.itemId,
@@ -55,26 +76,26 @@ class InventoryItem {
   }
 
   Map<String, dynamic> toJson() => {
-    'itemId': itemId,
-    'userId': userId,
-    'itemName': itemName,
-    'itemQuantity': itemQuantity,
-    'price': price,
-    'priceUnknown': priceUnknown,
-    'expiryDate': expiryDate.toIso8601String(),
-    'storageZone': storageZone.name,
-    'barcode': barcode,
-  };
+        'itemId': itemId,
+        'userId': userId,
+        'itemName': itemName,
+        'itemQuantity': itemQuantity,
+        'price': price,
+        'priceUnknown': priceUnknown,
+        'expiryDate': expiryDate.toIso8601String(),
+        'storageZone': storageZone.name,
+        'barcode': barcode,
+      };
 
   factory InventoryItem.fromJson(Map<String, dynamic> json) => InventoryItem(
-    itemId: json['itemId'],
-    userId: json['userId'],
-    itemName: json['itemName'],
-    itemQuantity: (json['itemQuantity'] as num).toDouble(),
-    price: (json['price'] as num).toDouble(),
-    priceUnknown: json['priceUnknown'] ?? false,
-    expiryDate: DateTime.parse(json['expiryDate']),
-    storageZone: StorageZone.values.byName(json['storageZone']),
-    barcode: json['barcode'],
-  );
+        itemId: json['itemId'],
+        userId: json['userId'],
+        itemName: json['itemName'],
+        itemQuantity: (json['itemQuantity'] as num).toDouble(),
+        price: (json['price'] as num).toDouble(),
+        priceUnknown: json['priceUnknown'] ?? false,
+        expiryDate: DateTime.parse(json['expiryDate']),
+        storageZone: StorageZone.values.byName(json['storageZone']),
+        barcode: json['barcode'],
+      );
 }
