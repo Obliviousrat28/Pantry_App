@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
-//import 'home_screen.dart';
 import 'budget_screen.dart';
-import 'inventory_screen.dart';
-//add this to add your screen to the app idk how you guys have made your UIs and screen
-//change these to suit your screens and other stuff
+import 'zone_screens.dart';
 //import 'recipe_screen.dart';
 //import 'recipe_details_screen.dart';
 //import 'settings_screen.dart';
@@ -21,10 +18,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   // List of your 4 screen widgets
   final List<Widget> _screens = [
-    // until a home screen is implemented, use placeholders for the other screens
-    // and the budget screen is the home screen for now
-    //const HomeScreen(),
-    const InventoryScreen(),
+    const ZoneScreen(title: 'Inventory'),
     const BudgetScreen(),
     const Center(child: Text('Recipe Screen Placeholder')),
     const Center(child: Text('Settings Screen Placeholder')),

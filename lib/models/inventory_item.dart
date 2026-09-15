@@ -9,6 +9,7 @@ class InventoryItem {
   bool priceUnknown;
   DateTime expiryDate;
   StorageZone storageZone;
+  final String? barcode; // Added from teammate's code
 
   InventoryItem({
     required this.itemId,
@@ -19,9 +20,9 @@ class InventoryItem {
     this.priceUnknown = false,
     required this.expiryDate,
     required this.storageZone,
+    this.barcode,
   });
 
-  // Helper method to update an item while keeping its existing ID
   void edit({
     String? name,
     double? quantity,
@@ -38,9 +39,6 @@ class InventoryItem {
     if (priceUnknown != null) this.priceUnknown = priceUnknown;
   }
 
-  void delete() {} //empty it to be implemented later whaen a database is added
-
-  //for the UML diagram
   bool isExpired() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -48,7 +46,6 @@ class InventoryItem {
     return expiry.isBefore(today);
   }
 
-  //for the UML diagram 
   bool isExpiringSoon() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);

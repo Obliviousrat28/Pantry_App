@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'barcode_scanner.dart';
+import '../services/barcode_scanner.dart';
 
 //***** ADD ITEM WIDGET - START *****
 // StorageZone enum: matches the diagram's StorageZone.

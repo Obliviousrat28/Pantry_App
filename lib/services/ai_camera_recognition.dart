@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
-import 'add_item_widget.dart';
+import '../widgets/add_item_widget.dart';
 
 //***** AI CAMERA FEATURE - START *****
 // StorageZone is defined further down under Add Item, but is used

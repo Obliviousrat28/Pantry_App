@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
+import '../services/barcode_scanner.dart'; // Make sure path matches your project structure
 
 class ItemAddDialog extends StatefulWidget {
   final Function(InventoryItem) onAddItem;
   final InventoryItem? initialData;
+  final String? initialName;
 
   const ItemAddDialog({
     super.key,
     required this.onAddItem,
     this.initialData,
+    this.initialName,
   });
 
   @override
@@ -17,21 +20,23 @@ class ItemAddDialog extends StatefulWidget {
 }
 
 class _ItemAddDialogState extends State<ItemAddDialog> {
+  final _formKey = GlobalKey<FormState>();
   late TextEditingController nameController;
   late TextEditingController qtyController;
   late TextEditingController priceController;
   
-  // 1. Change selectedZone type from String to StorageZone enum directly
-  late StorageZone selectedZone;
-  
+  StorageZone _selectedZone = StorageZone.FRIDGE;
   DateTime? selectedDate;
   bool isPriceUnknown = false;
+  String? _scannedBarcode;
+
+  final BarcodeScannerService _barcodeService = BarcodeScannerService();
 
   @override
   void initState() {
     super.initState();
     nameController = TextEditingController(
-      text: widget.initialData?.itemName ?? '',
+      text: widget.initialData?.itemName ?? widget.initialName ?? '',
     );
     qtyController = TextEditingController(
       text: widget.initialData != null
@@ -43,11 +48,10 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
           ? widget.initialData!.price.toString()
           : '',
     );
-    
-    // 2. Default directly to the enum value
-    selectedZone = widget.initialData?.storageZone ?? StorageZone.FRIDGE;
+    _selectedZone = widget.initialData?.storageZone ?? StorageZone.FRIDGE;
     selectedDate = widget.initialData?.expiryDate ?? DateTime.now();
     isPriceUnknown = widget.initialData?.priceUnknown ?? false;
+    _scannedBarcode = widget.initialData?.barcode;
   }
 
   @override
@@ -55,104 +59,144 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
     nameController.dispose();
     qtyController.dispose();
     priceController.dispose();
+    _barcodeService.close();
     super.dispose();
+  }
+
+  Future<void> _scanBarcode() async {
+    final code = await _barcodeService.scanBarcode(context);
+    if (code == null || !mounted) return;
+    setState(() {
+      _scannedBarcode = code;
+      if (nameController.text.isEmpty) {
+        nameController.text = code;
+      }
+    });
+  }
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      final double parsedPrice = double.tryParse(priceController.text) ?? 0.0;
+      final double parsedQty = double.tryParse(qtyController.text) ?? 0.0;
+
+      final newItem = InventoryItem(
+        itemId: widget.initialData?.itemId ?? DateTime.now().microsecondsSinceEpoch.toString(),
+        userId: 'user_1',
+        itemName: nameController.text,
+        itemQuantity: parsedQty,
+        price: isPriceUnknown ? 0.0 : parsedPrice,
+        priceUnknown: isPriceUnknown,
+        expiryDate: selectedDate ?? DateTime.now(),
+        storageZone: _selectedZone,
+        barcode: _scannedBarcode,
+      );
+
+      widget.onAddItem(newItem);
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.initialData == null ? 'Add New Item' : 'Edit Item'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Item Name'),
-            ),
-            TextField(
-              controller: qtyController,
-              decoration: const InputDecoration(labelText: 'Quantity'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: priceController,
-              enabled: !isPriceUnknown,
-              decoration: InputDecoration(
-                labelText: isPriceUnknown ? 'Price: N/A' : 'Price',
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            Row(
-              children: [
-                Checkbox(
-                  value: isPriceUnknown,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      isPriceUnknown = value ?? false;
-                      if (isPriceUnknown) {
-                        priceController.clear();
-                      }
-                    });
-                  },
+      content: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _scanBarcode,
+                icon: const Icon(Icons.qr_code_scanner),
+                label: Text(
+                  _scannedBarcode == null
+                      ? 'Scan Barcode'
+                      : 'Scanned: $_scannedBarcode',
                 ),
-                const Text('Price Unknown'),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // 3. Strongly typed Dropdown matching StorageZone enum values
-            DropdownButtonFormField<StorageZone>(
-              value: selectedZone,
-              decoration: const InputDecoration(
-                labelText: 'Storage Zone',
-                border: OutlineInputBorder(),
               ),
-              items: StorageZone.values.map((StorageZone zone) {
-                return DropdownMenuItem<StorageZone>(
-                  value: zone,
-                  child: Text(zone.displayName),
-                );
-              }).toList(),
-              onChanged: (StorageZone? newValue) {
-                if (newValue != null) {
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Item Name'),
+                validator: (val) => val == null || val.isEmpty ? 'Enter an item name' : null,
+              ),
+              TextFormField(
+                controller: qtyController,
+                decoration: const InputDecoration(labelText: 'Quantity'),
+                keyboardType: TextInputType.number,
+                validator: (val) => val == null || val.isEmpty ? 'Enter a quantity' : null,
+              ),
+              TextFormField(
+                controller: priceController,
+                enabled: !isPriceUnknown,
+                decoration: InputDecoration(
+                  labelText: isPriceUnknown ? 'Price: N/A' : 'Price',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              CheckboxListTile(
+                title: const Text("I don't know the price"),
+                value: isPriceUnknown,
+                onChanged: (bool? value) {
                   setState(() {
-                    selectedZone = newValue;
+                    isPriceUnknown = value ?? false;
+                    if (isPriceUnknown) priceController.clear();
                   });
-                }
-              },
-            ),
-            
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  selectedDate == null
-                      ? 'No Date Chosen'
-                      : 'Expiry: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<StorageZone>(
+                initialValue: _selectedZone,
+                decoration: const InputDecoration(
+                  labelText: 'Storage Zone',
+                  border: OutlineInputBorder(),
                 ),
-                TextButton.icon(
-                  icon: const Icon(Icons.calendar_today, size: 18),
-                  label: const Text('Pick Date'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: selectedDate ?? DateTime.now(),
-                      firstDate: DateTime(2025),
-                      lastDate: DateTime(2030),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        selectedDate = picked;
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-          ],
+                items: StorageZone.values.map((StorageZone zone) {
+                  return DropdownMenuItem<StorageZone>(
+                    value: zone,
+                    child: Text(zone.displayName),
+                  );
+                }).toList(),
+                onChanged: (StorageZone? newValue) {
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedZone = newValue;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    selectedDate == null
+                        ? 'No Date Chosen'
+                        : 'Expiry: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.calendar_today, size: 18),
+                    label: const Text('Pick Date'),
+                    onPressed: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: selectedDate ?? DateTime.now(),
+                        firstDate: DateTime(2025),
+                        lastDate: DateTime(2030),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          selectedDate = picked;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       actions: <Widget>[
@@ -161,31 +205,7 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () {
-            if (nameController.text.isEmpty ||
-                qtyController.text.isEmpty ||
-                selectedDate == null) {
-              return;
-            }
-
-            final double parsedPrice = double.tryParse(priceController.text) ?? 0.0;
-            final double parsedQty = double.tryParse(qtyController.text) ?? 0.0;
-
-            final newItem = InventoryItem(
-              itemId: widget.initialData?.itemId ?? DateTime.now().microsecondsSinceEpoch.toString(),
-              userId: 'user_1',
-              itemName: nameController.text,
-              itemQuantity: parsedQty,
-              price: isPriceUnknown ? 0.0 : parsedPrice,
-              priceUnknown: isPriceUnknown,
-              expiryDate: selectedDate!,
-              // 4. Pass selectedZone enum directly (no matching string lookup required)
-              storageZone: selectedZone,
-            );
-
-            widget.onAddItem(newItem);
-            Navigator.of(context).pop();
-          },
+          onPressed: _submit,
           child: Text(widget.initialData == null ? 'Add Item' : 'Save Changes'),
         ),
       ],
