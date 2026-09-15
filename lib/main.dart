@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'screens/main_navigation_screen.dart';
 
-import 'screens/budget_screen.dart';
 //new code
 void main() {
   runApp(const MyPantryPrototype());
@@ -14,7 +14,7 @@ class MyPantryPrototype extends StatelessWidget {
     return MaterialApp(
       title: 'My Pantry - Budget Prototype',
       theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const BudgetScreen(),
+      home: const MainNavigationScreen(),
     );
   }
 }//random comment
