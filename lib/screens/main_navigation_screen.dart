@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:my_pantry/screens/recipe_screen.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
 import '../services/storage_service.dart';
@@ -161,7 +162,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         remainingBudget: remainingBudget,
         mealLogs: mealLogs,
       ),
-      const Center(child: Text('Recipe Screen Placeholder')),
+      RecipesScreen(),
       const Center(child: Text('Settings Screen Placeholder')),
     ];
 
