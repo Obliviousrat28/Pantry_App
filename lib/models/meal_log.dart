@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class MealLog {
   final String mealName;
   final String mealPrice;
@@ -9,15 +11,18 @@ class MealLog {
     required this.mealDate,
   });
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toFirestore() => {
     'mealName': mealName,
     'mealPrice': mealPrice,
-    'mealDate': mealDate.toIso8601String(),
+    'mealDate': Timestamp.fromDate(mealDate),
   };
 
-  factory MealLog.fromJson(Map<String, dynamic> json) => MealLog(
-    mealName: json['mealName'],
-    mealPrice: json['mealPrice'],
-    mealDate: DateTime.parse(json['mealDate']),
-  );
+  factory MealLog.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final json = doc.data()!;
+    return MealLog(
+      mealName: json['mealName'] ?? '',
+      mealPrice: json['mealPrice'] ?? '0.00',
+      mealDate: (json['mealDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }

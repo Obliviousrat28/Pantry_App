@@ -18,6 +18,9 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  // Instantiate the storage service instance
+  final StorageService _storageService = StorageService();
+
   int _currentIndex = 0;
 
   // Shared State
@@ -63,7 +66,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  // Scenario 1: Adding an Inventory Item (Updates Inventory, Meal Screen, & Budget)
+  // Scenario 1: Adding an Inventory Item
   void _handleAddItem(InventoryItem item) async {
     final double unitCost = item.priceUnknown ? 0.0 : item.price;
     final double totalCost = unitCost * item.itemQuantity;
@@ -82,12 +85,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       remainingBudget -= totalCost;
     });
 
-    await StorageService.saveItems(inventoryItems);
-    await StorageService.saveMealLogs(mealLogs);
-    await StorageService.saveRemainingBudget(remainingBudget);
+    await _storageService.saveItems(inventoryItems);
+    await _storageService.saveMealLogs(mealLogs);
+    await _storageService.saveRemainingBudget(remainingBudget);
   }
 
-  // Scenario 2: Logging a Meal Directly (Updates Meal Screen & Budget ONLY)
+  // Scenario 2: Logging a Meal Directly
   void _handleLogMeal(MealLog meal) async {
     final double mealCost = double.tryParse(meal.mealPrice) ?? 0.0;
 
@@ -96,8 +99,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       remainingBudget -= mealCost;
     });
 
-    await StorageService.saveMealLogs(mealLogs);
-    await StorageService.saveRemainingBudget(remainingBudget);
+    await _storageService.saveMealLogs(mealLogs);
+    await _storageService.saveRemainingBudget(remainingBudget);
   }
 
   void _editItem(InventoryItem updatedItem) async {
@@ -106,24 +109,18 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final oldItem = inventoryItems[index];
 
-    // 1. Calculate old vs new total costs (Handles priceUnknown automatically)
     final double oldUnitCost = oldItem.priceUnknown ? 0.0 : oldItem.price;
     final double oldTotalCost = oldUnitCost * oldItem.itemQuantity;
 
     final double newUnitCost = updatedItem.priceUnknown ? 0.0 : updatedItem.price;
     final double newTotalCost = newUnitCost * updatedItem.itemQuantity;
 
-    // 2. Calculate cost difference (Negative difference refunds budget; positive deducts)
     final double costDifference = newTotalCost - oldTotalCost;
 
     setState(() {
-      // Update item in local inventory list
       inventoryItems[index] = updatedItem;
-
-      // Adjust remaining budget
       remainingBudget -= costDifference;
 
-      // 3. Find matching meal log by exact old name format
       final oldFormattedName = '${oldItem.itemName} (x${oldItem.itemQuantity.toInt()})';
       final logIndex = mealLogs.indexWhere(
         (log) => log.mealName == oldFormattedName,
@@ -133,22 +130,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs[logIndex] = MealLog(
           mealName: '${updatedItem.itemName} (x${updatedItem.itemQuantity.toInt()})',
           mealPrice: newTotalCost.toStringAsFixed(2),
-          mealDate: mealLogs[logIndex].mealDate, // Retain original creation date
+          mealDate: mealLogs[logIndex].mealDate,
         );
       }
     });
 
-    // Save changes across all persistence keys
-    await StorageService.saveItems(inventoryItems);
-    await StorageService.saveMealLogs(mealLogs);
-    await StorageService.saveRemainingBudget(remainingBudget);
+    await _storageService.saveItems(inventoryItems);
+    await _storageService.saveMealLogs(mealLogs);
+    await _storageService.saveRemainingBudget(remainingBudget);
   }
 
   void _deleteItem(InventoryItem item) async {
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
-    await StorageService.saveItems(inventoryItems);
+    
+    // Call the dedicated deletion method using the item's unique ID
+    await _storageService.deleteItem(item.itemId);
   }
 
   void _openAddModal() {

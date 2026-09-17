@@ -1,8 +1,7 @@
-enum StorageZone {
-  fridge,
-  freezer,
-  pantry,
-}
+
+enum StorageZone { fridge, freezer, pantry }
+
+
 
 extension StorageZoneExtension on StorageZone {
   String get displayName {

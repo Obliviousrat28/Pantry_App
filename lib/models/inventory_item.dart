@@ -1,15 +1,16 @@
 import 'storage_zone.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InventoryItem {
-  final String itemId; 
-  final String userId; 
+  final String itemId;
+  final String userId;
   String itemName;
   double itemQuantity;
   double price;
   bool priceUnknown;
   DateTime expiryDate;
   StorageZone storageZone;
-  final String? barcode; // Added from teammate's code
+  final String? barcode;
 
   InventoryItem({
     required this.itemId,
@@ -54,27 +55,33 @@ class InventoryItem {
     return difference >= 0 && difference <= 3;
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toFirestore() => {
     'itemId': itemId,
     'userId': userId,
     'itemName': itemName,
     'itemQuantity': itemQuantity,
     'price': price,
     'priceUnknown': priceUnknown,
-    'expiryDate': expiryDate.toIso8601String(),
+    'expiryDate': Timestamp.fromDate(expiryDate),
     'storageZone': storageZone.name,
     'barcode': barcode,
   };
 
-  factory InventoryItem.fromJson(Map<String, dynamic> json) => InventoryItem(
-    itemId: json['itemId'],
-    userId: json['userId'],
-    itemName: json['itemName'],
-    itemQuantity: (json['itemQuantity'] as num).toDouble(),
-    price: (json['price'] as num).toDouble(),
-    priceUnknown: json['priceUnknown'] ?? false,
-    expiryDate: DateTime.parse(json['expiryDate']),
-    storageZone: StorageZone.values.byName(json['storageZone']),
-    barcode: json['barcode'],
-  );
+  factory InventoryItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final json = doc.data()!;
+    return InventoryItem(
+      itemId: doc.id, // Always use doc.id directly from Firestore
+      userId: json['userId'] ?? '',
+      itemName: json['itemName'] ?? '',
+      itemQuantity: (json['itemQuantity'] as num?)?.toDouble() ?? 0.0,
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      priceUnknown: json['priceUnknown'] ?? false,
+      expiryDate: (json['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      storageZone: StorageZone.values.firstWhere(
+        (e) => e.name == json['storageZone'],
+        orElse: () => StorageZone.pantry,
+      ),
+      barcode: json['barcode'],
+    );
+  }
 }
