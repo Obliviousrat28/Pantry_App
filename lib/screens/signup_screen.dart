@@ -30,7 +30,7 @@ class _SignupScreenState extends State<SignupScreen>
 
   List<String> dietaryPreference = [];
 
-  void register()
+  void register() async
   {
     setState(() {
       errorMessage = SignupValidation.validate(
@@ -55,6 +55,11 @@ class _SignupScreenState extends State<SignupScreen>
         weeklyBudgetGoal: double.parse(weeklyBudgetGoalController.text),
         dietaryPreference: dietaryPreference,
       );
+
+      await StorageService.saveUser(newUser);
+      await StorageService.saveWeeklyBudgetGoal(newUser.weeklyBudgetGoal); 
+
+      if(!context.mounted) return;
 
       print('User registered: ${newUser.userName}');
       print('User ID: ${newUser.userId}');
