@@ -9,6 +9,7 @@ import '../widgets/signup/signup_dietary_preferences.dart';
 import '../widgets/signup/signup_budget_field.dart';
 import '../widgets/signup/signup_error_message.dart';
 import '../services/signup_validation.dart';
+import '../services/user_service.dart';
 
 class SignupScreen extends StatefulWidget
 {
@@ -55,8 +56,13 @@ class _SignupScreenState extends State<SignupScreen>
         dietaryPreference: dietaryPreference,
       );
 
+      UserService userService = UserService();
+      userService.registerUser(newUser);
+
       print('User registered: ${newUser.userName}');
       print('User ID: ${newUser.userId}');
+      print ('Email: ${newUser.userEmail}');
+      print ('Password: ${newUser.userPassword}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account created successfully!')),

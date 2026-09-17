@@ -4,6 +4,9 @@ import '../widgets/login/login_password_field.dart';
 import '../widgets/login/login_error_message.dart';
 import '../services/login_validation.dart';
 import 'signup_screen.dart';
+import '../services/user_service.dart';
+import '../screens/main_navigation_screen.dart';
+import '../models/user.dart';
 
 class LoginScreen extends StatefulWidget
 {
@@ -30,9 +33,23 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (errorMessage.isEmpty)
     {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login successful!')),
+      UserService userService = UserService();
+      User? user = userService.validateLogin(
+        userEmailController.text,
+        userPasswordController.text,
       );
+
+      if (user != null)
+      {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      } else {
+        setState(() {
+          errorMessage = 'Email or password is incorrect';
+        });
+      }
     }
   }
 
