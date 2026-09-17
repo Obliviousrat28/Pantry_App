@@ -21,6 +21,7 @@ class SignupScreen extends StatefulWidget
 
 class _SignupScreenState extends State<SignupScreen>
 {
+  final StorageService _storageService = StorageService();
   final userNameController = TextEditingController();
   final userEmailController = TextEditingController();
   final userPasswordController = TextEditingController();
@@ -56,8 +57,12 @@ class _SignupScreenState extends State<SignupScreen>
         dietaryPreference: dietaryPreference,
       );
 
-      await StorageService.saveUser(newUser);
-      await StorageService.saveWeeklyBudgetGoal(newUser.weeklyBudgetGoal); 
+      await _storageService.saveUserData(
+        userName: userNameController.text.trim(),
+        email: userEmailController.text.trim(),
+        weeklyBudgetGoal: double.parse(weeklyBudgetGoalController.text),
+        dietaryPreferences: dietaryPreference,
+      );
 
       if(!context.mounted) return;
 

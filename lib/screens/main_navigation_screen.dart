@@ -41,25 +41,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   // Load persisted data on app launch
   Future<void> _loadSavedData() async {
-    final user = await StorageService.loadUser();
-//A user cannot access the main navigation screen without signing in first. If no user is found, redirect to the login screen.
-    if(user == null) {
-      if(!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-      return;
-    }
+    final items = await _storageService.loadItems();
+    final meals = await _storageService.loadMealLogs();
+    final goal = await _storageService.loadWeeklyBudgetGoal(120.00);
+    final budget = await _storageService.loadRemainingBudget(goal);
 
-    final items = await StorageService.loadItems();
-    final meals = await StorageService.loadMealLogs();
-    final goal = await StorageService.loadWeeklyBudgetGoal(user.weeklyBudgetGoal);
-    final budget = await StorageService.loadRemainingBudget(goal);
-    
     setState(() {
       inventoryItems = items;
       mealLogs = meals;
-      currentUser = user;
       weeklyBudgetGoal = goal;
       remainingBudget = budget;
       isLoading = false;
