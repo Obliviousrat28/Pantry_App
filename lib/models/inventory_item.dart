@@ -67,21 +67,21 @@ class InventoryItem {
     'barcode': barcode,
   };
 
-factory InventoryItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-  final json = doc.data()!;
-  return InventoryItem(
-    itemId: json['itemId'] ?? doc.id,
-    userId: json['userId'] ?? '',
-    itemName: json['itemName'] ?? '',
-    itemQuantity: (json['itemQuantity'] as num?)?.toDouble() ?? 0.0,
-    price: (json['price'] as num?)?.toDouble() ?? 0.0,
-    priceUnknown: json['priceUnknown'] ?? false,
-    expiryDate: (json['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    storageZone: StorageZone.values.firstWhere(
-      (e) => e.name == json['storageZone'],
-      orElse: () => StorageZone.pantry,
-    ),
-    barcode: json['barcode'],
-  );
-}
+  factory InventoryItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final json = doc.data()!;
+    return InventoryItem(
+      itemId: doc.id, // Always use doc.id directly from Firestore
+      userId: json['userId'] ?? '',
+      itemName: json['itemName'] ?? '',
+      itemQuantity: (json['itemQuantity'] as num?)?.toDouble() ?? 0.0,
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      priceUnknown: json['priceUnknown'] ?? false,
+      expiryDate: (json['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      storageZone: StorageZone.values.firstWhere(
+        (e) => e.name == json['storageZone'],
+        orElse: () => StorageZone.pantry,
+      ),
+      barcode: json['barcode'],
+    );
+  }
 }

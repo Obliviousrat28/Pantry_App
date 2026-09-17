@@ -125,7 +125,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
-    await _storageService.saveItems(inventoryItems);
+    
+    // Call the dedicated deletion method using the item's unique ID
+    await _storageService.deleteItem(item.itemId);
   }
 
   void _openAddModal() {

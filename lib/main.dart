@@ -20,6 +20,18 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
+      home: const MainNavigationScreen(), // Bypasses AuthGate entirely
+    );
+  }
+}
+
+/*class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true),
       home: const AuthGate(),
     );
   }
@@ -42,4 +54,4 @@ class AuthGate extends StatelessWidget {
       },
     );
   }
-}
+}*/

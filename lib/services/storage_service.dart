@@ -6,73 +6,81 @@ import '../models/meal_log.dart';
 class StorageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Helper getter to ensure operations only target the authenticated user
-  String get _userId {
+  /*String get _userId {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("User is not authenticated.");
     return user.uid;
+  }*/
+
+  String get _userId {
+    final user = FirebaseAuth.instance.currentUser;
+    // Bypasses auth completely for testing
+    return user?.uid ?? 'dev_test_user'; 
   }
 
-  // Document reference pointing to users/{userId}
   DocumentReference get _userDoc =>
       _firestore.collection('users').doc(_userId);
 
-  // ================= INVENTORY METHODS =================
+  // ================= INVENTORY =================
 
-  /// Listens to inventory items in real-time
-  Stream<List<InventoryItem>> getInventoryStream() {
-    return _userDoc.collection('inventory').snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((doc) => InventoryItem.fromFirestore(doc))
-          .toList();
-    });
+  Future<List<InventoryItem>> loadItems() async {
+    final snapshot = await _userDoc.collection('inventory').get();
+    return snapshot.docs
+        .map((doc) => InventoryItem.fromFirestore(doc))
+        .toList();
   }
 
-  /// Adds or updates a single inventory item
-  Future<void> saveInventoryItem(InventoryItem item) async {
-    await _userDoc
-        .collection('inventory')
-        .doc(item.itemId)
-        .set(item.toFirestore(), SetOptions(merge: true));
-  }
-
-  /// Executes batch writes for updating multiple inventory items at once
-  Future<void> saveInventoryBatch(List<InventoryItem> items) async {
+  Future<void> saveItems(List<InventoryItem> items) async {
     final batch = _firestore.batch();
-
     for (final item in items) {
       final docRef = _userDoc.collection('inventory').doc(item.itemId);
       batch.set(docRef, item.toFirestore(), SetOptions(merge: true));
     }
-
     await batch.commit();
   }
 
-  /// Deletes an inventory item
-  Future<void> deleteInventoryItem(String itemId) async {
+  Future<void> deleteItem(String itemId) async {
     await _userDoc.collection('inventory').doc(itemId).delete();
   }
 
-  // ================= MEAL LOG / BUDGET METHODS =================
+  // ================= MEAL LOGS =================
 
-  /// Listens to meal logs in real-time, ordered by date
-  Stream<List<MealLog>> getMealLogsStream() {
-    return _userDoc
+  Future<List<MealLog>> loadMealLogs() async {
+    final snapshot = await _userDoc
         .collection('meal_logs')
         .orderBy('mealDate', descending: true)
-        .snapshots()
-        .map((snapshot) {
-      return snapshot.docs.map((doc) => MealLog.fromFirestore(doc)).toList();
-    });
+        .get();
+    return snapshot.docs.map((doc) => MealLog.fromFirestore(doc)).toList();
   }
 
-  /// Adds a new meal log entry
-  Future<void> addMealLog(MealLog log) async {
-    await _userDoc.collection('meal_logs').add(log.toFirestore());
+  Future<void> saveMealLogs(List<MealLog> logs) async {
+    final batch = _firestore.batch();
+    for (final log in logs) {
+      // Deterministic ID prevents duplicate writes in Firestore
+      final docId = log.mealDate.millisecondsSinceEpoch.toString();
+      final docRef = _userDoc.collection('meal_logs').doc(docId);
+      batch.set(docRef, log.toFirestore(), SetOptions(merge: true));
+    }
+    await batch.commit();
   }
 
-  /// Deletes a meal log entry by document ID
-  Future<void> deleteMealLog(String logId) async {
-    await _userDoc.collection('meal_logs').doc(logId).delete();
+  // ================= BUDGET =================
+
+  Future<double> loadRemainingBudget(double defaultBudget) async {
+    final doc = await _userDoc.get();
+    if (doc.exists && doc.data() != null) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data.containsKey('remainingBudget')) {
+        return (data['remainingBudget'] as num).toDouble();
+      }
+    }
+    return defaultBudget;
+  }
+
+  Future<void> saveRemainingBudget(double budget) async {
+    await _userDoc.set(
+      {'remainingBudget': budget},
+      SetOptions(merge: true),
+    );
   }
 }
