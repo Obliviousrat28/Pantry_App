@@ -22,7 +22,7 @@ class RecipeRecommendations {
 //Handles recipe generation and loads the latest user data
 class RecipeService {
   //10.0.2.2 lets the Android emulator access localhost on the computer
-  final String baseUrl = 'http://10.0.2.2:3000';
+  final String baseUrl = 'https://pantry-recipe-backend.onrender.com';
 
   //Uses the existing group storage service without changing it
   final StorageService storageService = StorageService();
