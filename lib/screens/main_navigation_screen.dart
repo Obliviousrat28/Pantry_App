@@ -7,6 +7,8 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/item_add_dialog.dart';
 import 'budget_screen.dart';
 import 'zone_screens.dart';
+import 'login_screen.dart';
+import '../models/user.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -21,7 +23,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Shared State
   List<InventoryItem> inventoryItems = [];
   List<MealLog> mealLogs = [];
-  double remainingBudget = 120.00;
+  //value to be loaded from storage on app launch.
+  late double remainingBudget;
+  late double weeklyBudgetGoal;
+
+  User? currentUser;
   bool isLoading = true;
 
   @override
@@ -32,13 +38,26 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   // Load persisted data on app launch
   Future<void> _loadSavedData() async {
+    final user = await StorageService.loadUser();
+//A user cannot access the main navigation screen without signing in first. If no user is found, redirect to the login screen.
+    if(user == null) {
+      if(!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+      return;
+    }
+
     final items = await StorageService.loadItems();
     final meals = await StorageService.loadMealLogs();
-    final budget = await StorageService.loadRemainingBudget(120.00);
-
+    final goal = await StorageService.loadWeeklyBudgetGoal(user.weeklyBudgetGoal);
+    final budget = await StorageService.loadRemainingBudget(goal);
+    
     setState(() {
       inventoryItems = items;
       mealLogs = meals;
+      currentUser = user;
+      weeklyBudgetGoal = goal;
       remainingBudget = budget;
       isLoading = false;
     });
@@ -160,6 +179,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       BudgetScreen(
         remainingBudget: remainingBudget,
+        weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
       ),
       RecipesScreen(),

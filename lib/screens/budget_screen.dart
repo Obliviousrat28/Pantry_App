@@ -4,12 +4,14 @@ import '../models/budget.dart';
 
 class BudgetScreen extends StatelessWidget {
   final double remainingBudget;
+  final double weeklyBudgetGoal;
   final List<MealLog> mealLogs;
 
   const BudgetScreen({
     super.key,
     required this.remainingBudget,
     required this.mealLogs,
+    required this.weeklyBudgetGoal,
   });
 
   // Prototype budget goal reference
