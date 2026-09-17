@@ -32,6 +32,12 @@ class StorageService {
       'createdAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
+  Future<Map<String, dynamic>?> loadUserProfile() async {
+    final doc = await _userDoc.get();
+    return doc.data() as Map<String, dynamic>?;
+  }
+
+
 
   // ================= INVENTORY =================
 

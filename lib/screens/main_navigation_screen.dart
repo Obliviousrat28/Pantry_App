@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 import 'package:my_pantry/screens/recipe_screen.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
@@ -7,8 +8,8 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/item_add_dialog.dart';
 import 'budget_screen.dart';
 import 'zone_screens.dart';
-import 'login_screen.dart';
 import '../models/user.dart';
+import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -43,12 +44,28 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Future<void> _loadSavedData() async {
     final items = await _storageService.loadItems();
     final meals = await _storageService.loadMealLogs();
-    final goal = await _storageService.loadWeeklyBudgetGoal(120.00);
+    final profile = await _storageService.loadUserProfile();
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+
+    final user = (profile == null || firebaseUser == null)
+        ? null
+        : User(
+            userId: firebaseUser.uid,
+            userName: profile['userName'] ?? '',
+            userEmail: profile['email'] ?? '',
+            userPassword: '',
+            weeklyBudgetGoal: (profile['weeklyBudgetGoal'] as num?)?.toDouble() ?? 120.0,
+            dietaryPreference: List<String>.from(profile['dietaryPreferences'] ?? []),
+          );
+
+    final defaultGoal = user?.weeklyBudgetGoal ?? 120.0;
+    final goal = await _storageService.loadWeeklyBudgetGoal(defaultGoal);
     final budget = await _storageService.loadRemainingBudget(goal);
 
     setState(() {
       inventoryItems = items;
       mealLogs = meals;
+      currentUser = user;
       weeklyBudgetGoal = goal;
       remainingBudget = budget;
       isLoading = false;
@@ -148,6 +165,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+ void _updateBudgetGoal(double newGoal) async {
+    final spentSoFar = weeklyBudgetGoal - remainingBudget;
+
+    setState(() {
+      weeklyBudgetGoal = newGoal;
+      remainingBudget = newGoal - spentSoFar;
+      if (currentUser != null) {
+        currentUser = currentUser!.copyWith(weeklyBudgetGoal: newGoal);
+      }
+    });
+
+    await _storageService.saveWeeklyBudgetGoal(newGoal);
+    await _storageService.saveRemainingBudget(remainingBudget);
+  }
+
+  void _updateDietaryPreferences(List<String> preferences) async {
+    if (currentUser == null) return;
+    setState(() {
+      currentUser = currentUser!.copyWith(dietaryPreference: preferences);
+    });
+    await _storageService.saveUserData(
+      userName: currentUser!.userName,
+      email: currentUser!.userEmail,
+      weeklyBudgetGoal: currentUser!.weeklyBudgetGoal,
+      dietaryPreferences: preferences,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -170,7 +215,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
       ),
       RecipesScreen(),
-      const Center(child: Text('Settings Screen Placeholder')),
+      SettingsScreen(
+        user: currentUser,
+        weeklyBudgetGoal: weeklyBudgetGoal,
+        onUpdateBudgetGoal: _updateBudgetGoal,
+        onUpdateDietaryPreferences: _updateDietaryPreferences,
+    ),
     ];
 
     return Scaffold(
