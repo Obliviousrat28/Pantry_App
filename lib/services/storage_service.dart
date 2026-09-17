@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
+import '../models/user.dart';
 
 class StorageService {
   static const String _itemsKey = 'inventory_items';
   static const String _mealsKey = 'meal_logs';
   static const String _budgetKey = 'remaining_budget';
+  static const String _goalKey = 'weekly_budget_goal';
+  static const String _userKey = 'current_user';
 
   // --- Save Methods ---
 
@@ -29,6 +32,18 @@ class StorageService {
   static Future<void> saveRemainingBudget(double budget) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble(_budgetKey, budget);
+  }
+
+    // Saves the user's weekly budget goal (the target, separate from what's left).
+  static Future<void> saveWeeklyBudgetGoal(double goal) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_goalKey, goal);
+  }
+
+ // Saves the signed-up user's details.
+  static Future<void> saveUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, json.encode(user.toJson()));
   }
 
   // --- Load Methods ---
@@ -54,5 +69,19 @@ class StorageService {
   static Future<double> loadRemainingBudget(double defaultBudget) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(_budgetKey) ?? defaultBudget;
+  }
+
+  // Loads the saved goal, falling back to defaultGoal if none saved yet.
+  static Future<double> loadWeeklyBudgetGoal(double defaultGoal) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(_goalKey) ?? defaultGoal;
+  }
+  
+  // Loads the saved user, or null if nobody has signed up yet.
+  static Future<User?> loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? userString = prefs.getString(_userKey);
+    if (userString == null) return null;
+    return User.fromJson(json.decode(userString));
   }
 }
