@@ -9,6 +9,7 @@ import '../widgets/signup/signup_dietary_preferences.dart';
 import '../widgets/signup/signup_budget_field.dart';
 import '../widgets/signup/signup_error_message.dart';
 import '../services/signup_validation.dart';
+import '../services/storage_service.dart';
 
 class SignupScreen extends StatefulWidget
 {
