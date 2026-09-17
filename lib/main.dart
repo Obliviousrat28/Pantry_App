@@ -21,11 +21,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
-      home: const AuthGate(),
+      home: const MainNavigationScreen(),
     );
   }
 }
 
+//Since the login screen isn't working, I've temporarily changed it to a navigation page for testing purposes
+/*
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -42,4 +44,4 @@ class AuthGate extends StatelessWidget {
       },
     );
   }
-}
+}*/

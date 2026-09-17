@@ -17,6 +17,7 @@ class Recipe {
     required this.instructions,
   });
 
+  //Creates a Recipe object from JSON data
   factory Recipe.fromJson(Map<String, dynamic> json) {
     return Recipe(
       title: json['title'] ?? '',
@@ -27,5 +28,18 @@ class Recipe {
       ingredients: List<String>.from(json['ingredients'] ?? []),
       instructions: List<String>.from(json['instructions'] ?? []),
     );
+  }
+
+  //Converts the Recipe object into JSON data
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'description': description,
+      'prepTime': prepTime,
+      'calories': calories,
+      'protein': protein,
+      'ingredients': ingredients,
+      'instructions': instructions,
+    };
   }
 }

@@ -1,5 +1,6 @@
-//THIS CLASS FOR TESTING PURPOSES ONLY, NOT USED IN THE APP
+//THIS CLASS FOR TESTING PURPOSES ONLY
 
+//Stores dietary preference values used when generating recipes
 class DietaryPreferences {
   bool vegetarian;
   bool vegan;
@@ -8,6 +9,7 @@ class DietaryPreferences {
   bool dairyFree;
   bool highProtein;
 
+  //Each value shows whether a dietary option is selected
   DietaryPreferences({
     this.vegetarian = false,
     this.vegan = false,
@@ -17,6 +19,7 @@ class DietaryPreferences {
     this.highProtein = false,
   });
 
+  //Converts the preferences into JSON before sending them to the backend
   Map<String, dynamic> toJson() {
     return {
       'vegetarian': vegetarian,
