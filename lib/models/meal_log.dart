@@ -1,16 +1,8 @@
-import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-part 'meal_log.g.dart';
-
-@HiveType(typeId: 1)
-class MealLog extends HiveObject {
-  @HiveField(0)
+class MealLog {
   final String mealName;
-
-  @HiveField(1)
   final String mealPrice;
-
-  @HiveField(2)
   final DateTime mealDate;
 
   MealLog({
@@ -19,15 +11,18 @@ class MealLog extends HiveObject {
     required this.mealDate,
   });
 
-  Map<String, dynamic> toJson() => {
-        'mealName': mealName,
-        'mealPrice': mealPrice,
-        'mealDate': mealDate.toIso8601String(),
-      };
+  Map<String, dynamic> toFirestore() => {
+    'mealName': mealName,
+    'mealPrice': mealPrice,
+    'mealDate': Timestamp.fromDate(mealDate),
+  };
 
-  factory MealLog.fromJson(Map<String, dynamic> json) => MealLog(
-        mealName: json['mealName'],
-        mealPrice: json['mealPrice'],
-        mealDate: DateTime.parse(json['mealDate']),
-      );
+  factory MealLog.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final json = doc.data()!;
+    return MealLog(
+      mealName: json['mealName'] ?? '',
+      mealPrice: json['mealPrice'] ?? '0.00',
+      mealDate: (json['mealDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }

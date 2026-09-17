@@ -1,26 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'models/inventory_item.dart';
-import 'models/meal_log.dart';
-import 'models/storage_zone.dart';
-import 'screens/main_navigation_screen.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'firebase_options.dart';
+import 'screens/main_navigation_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Hive.initFlutter();
-
-  // Register all 3 adapters
-  Hive.registerAdapter(StorageZoneAdapter());
-  Hive.registerAdapter(InventoryItemAdapter());
-  Hive.registerAdapter(MealLogAdapter());
-
-  // Open Hive boxes
-  await Hive.openBox<InventoryItem>('inventory_box');
-  await Hive.openBox<MealLog>('meal_logs_box');
-  await Hive.openBox('settings_box');
-
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -29,8 +18,28 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: MainNavigationScreen(),
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return SignInScreen(
+            providers: [EmailAuthProvider()],
+          );
+        }
+        return const MainNavigationScreen();
+      },
     );
   }
 }

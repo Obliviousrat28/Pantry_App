@@ -1,38 +1,78 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
 
 class StorageService {
-  static final Box<InventoryItem> _itemBox = Hive.box<InventoryItem>('inventory_box');
-  static final Box<MealLog> _mealBox = Hive.box<MealLog>('meal_logs_box');
-  static final Box _settingsBox = Hive.box('settings_box');
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // --- Inventory Items ---
-  static Future<void> saveItems(List<InventoryItem> items) async {
-    await _itemBox.clear();
-    await _itemBox.addAll(items);
+  // Helper getter to ensure operations only target the authenticated user
+  String get _userId {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw Exception("User is not authenticated.");
+    return user.uid;
   }
 
-  static Future<List<InventoryItem>> loadItems() async {
-    return _itemBox.values.toList();
+  // Document reference pointing to users/{userId}
+  DocumentReference get _userDoc =>
+      _firestore.collection('users').doc(_userId);
+
+  // ================= INVENTORY METHODS =================
+
+  /// Listens to inventory items in real-time
+  Stream<List<InventoryItem>> getInventoryStream() {
+    return _userDoc.collection('inventory').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => InventoryItem.fromFirestore(doc))
+          .toList();
+    });
   }
 
-  // --- Meal Logs ---
-  static Future<void> saveMealLogs(List<MealLog> meals) async {
-    await _mealBox.clear();
-    await _mealBox.addAll(meals);
+  /// Adds or updates a single inventory item
+  Future<void> saveInventoryItem(InventoryItem item) async {
+    await _userDoc
+        .collection('inventory')
+        .doc(item.itemId)
+        .set(item.toFirestore(), SetOptions(merge: true));
   }
 
-  static Future<List<MealLog>> loadMealLogs() async {
-    return _mealBox.values.toList();
+  /// Executes batch writes for updating multiple inventory items at once
+  Future<void> saveInventoryBatch(List<InventoryItem> items) async {
+    final batch = _firestore.batch();
+
+    for (final item in items) {
+      final docRef = _userDoc.collection('inventory').doc(item.itemId);
+      batch.set(docRef, item.toFirestore(), SetOptions(merge: true));
+    }
+
+    await batch.commit();
   }
 
-  // --- Budget ---
-  static Future<void> saveRemainingBudget(double budget) async {
-    await _settingsBox.put('remaining_budget', budget);
+  /// Deletes an inventory item
+  Future<void> deleteInventoryItem(String itemId) async {
+    await _userDoc.collection('inventory').doc(itemId).delete();
   }
 
-  static Future<double> loadRemainingBudget(double defaultBudget) async {
-    return _settingsBox.get('remaining_budget', defaultValue: defaultBudget) as double;
+  // ================= MEAL LOG / BUDGET METHODS =================
+
+  /// Listens to meal logs in real-time, ordered by date
+  Stream<List<MealLog>> getMealLogsStream() {
+    return _userDoc
+        .collection('meal_logs')
+        .orderBy('mealDate', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => MealLog.fromFirestore(doc)).toList();
+    });
+  }
+
+  /// Adds a new meal log entry
+  Future<void> addMealLog(MealLog log) async {
+    await _userDoc.collection('meal_logs').add(log.toFirestore());
+  }
+
+  /// Deletes a meal log entry by document ID
+  Future<void> deleteMealLog(String logId) async {
+    await _userDoc.collection('meal_logs').doc(logId).delete();
   }
 }
