@@ -9,6 +9,7 @@ import '../widgets/signup/signup_dietary_preferences.dart';
 import '../widgets/signup/signup_budget_field.dart';
 import '../widgets/signup/signup_error_message.dart';
 import '../services/signup_validation.dart';
+import '../services/storage_service.dart';
 
 class SignupScreen extends StatefulWidget
 {
@@ -29,7 +30,7 @@ class _SignupScreenState extends State<SignupScreen>
 
   List<String> dietaryPreference = [];
 
-  void register()
+  void register() async
   {
     setState(() {
       errorMessage = SignupValidation.validate(
@@ -54,6 +55,11 @@ class _SignupScreenState extends State<SignupScreen>
         weeklyBudgetGoal: double.parse(weeklyBudgetGoalController.text),
         dietaryPreference: dietaryPreference,
       );
+
+      await StorageService.saveUser(newUser);
+      await StorageService.saveWeeklyBudgetGoal(newUser.weeklyBudgetGoal); 
+
+      if(!context.mounted) return;
 
       print('User registered: ${newUser.userName}');
       print('User ID: ${newUser.userId}');

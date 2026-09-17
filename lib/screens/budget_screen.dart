@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import '../models/meal_log.dart';
-import '../models/budget.dart';
+
 
 class BudgetScreen extends StatelessWidget {
   final double remainingBudget;
+  final double weeklyBudgetGoal;
   final List<MealLog> mealLogs;
 
   const BudgetScreen({
     super.key,
     required this.remainingBudget,
     required this.mealLogs,
+    required this.weeklyBudgetGoal,
   });
-
-  // Prototype budget goal reference
-  static final Budget _budget = Budget(userId: 'demo-user', weeklyBudgetGoal: 120.0);
 
   @override
   Widget build(BuildContext context) {
-    final spent = _budget.weeklyBudgetGoal - remainingBudget;
+    final spent = weeklyBudgetGoal - remainingBudget;
     final remaining = remainingBudget;
     final overBudget = remaining < 0;
 
@@ -29,7 +28,7 @@ class BudgetScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _BudgetSummaryCard(
-              weeklyGoal: _budget.weeklyBudgetGoal,
+              weeklyGoal: weeklyBudgetGoal,
               spent: spent,
               remaining: remaining,
               overBudget: overBudget,
