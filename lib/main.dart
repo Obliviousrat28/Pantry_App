@@ -26,8 +26,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-//Since the login screen isn't working, I've temporarily changed it to a navigation page for testing purposes
-/*
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -44,4 +42,4 @@ class AuthGate extends StatelessWidget {
       },
     );
   }
-}*/
+}

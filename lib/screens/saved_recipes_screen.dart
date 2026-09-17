@@ -92,7 +92,6 @@ class _SavedRecipesScreenState
         ),
         centerTitle: true,
       ),
-
       body: isLoading
           ? const Center(
               child: CircularProgressIndicator(),
@@ -146,9 +145,7 @@ class _EmptySavedRecipes extends StatelessWidget {
               size: 70,
               color: Colors.grey,
             ),
-
             const SizedBox(height: 15),
-
             const Text(
               'No Saved Recipes',
               style: TextStyle(
@@ -156,9 +153,7 @@ class _EmptySavedRecipes extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Recipes you save will appear here.',
               textAlign: TextAlign.center,
@@ -189,6 +184,36 @@ class SavedRecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Builds only the information that is available for this recipe
+    final infoItems = <Widget>[];
+
+    if (recipe.prepTime > 0) {
+      infoItems.add(
+        _RecipeInfo(
+          icon: Icons.timer_outlined,
+          text: '${recipe.prepTime} min',
+        ),
+      );
+    }
+
+    if (recipe.calories > 0) {
+      infoItems.add(
+        _RecipeInfo(
+          icon: Icons.local_fire_department_outlined,
+          text: '${recipe.calories} kcal',
+        ),
+      );
+    }
+
+    if (recipe.protein > 0) {
+      infoItems.add(
+        _RecipeInfo(
+          icon: Icons.fitness_center,
+          text: '${recipe.protein}g protein',
+        ),
+      );
+    }
+
     return Card(
       margin:
           const EdgeInsets.only(bottom: 15),
@@ -198,6 +223,23 @@ class SavedRecipeCard extends StatelessWidget {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
+            //Shows the recipe source
+            Chip(
+              avatar: Icon(
+                recipe.isRealRecipe
+                    ? Icons.menu_book_outlined
+                    : Icons.auto_awesome,
+                size: 17,
+              ),
+              label: Text(
+                recipe.isRealRecipe
+                    ? 'Real Recipe • ${recipe.sourceName}'
+                    : 'AI Generated',
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             //Recipe title
             Text(
               recipe.title,
@@ -218,33 +260,16 @@ class SavedRecipeCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 15),
+            if (infoItems.isNotEmpty) ...[
+              const SizedBox(height: 15),
 
-            //Recipe information
-            Wrap(
-              spacing: 15,
-              runSpacing: 10,
-              children: [
-                _RecipeInfo(
-                  icon:
-                      Icons.timer_outlined,
-                  text:
-                      '${recipe.prepTime} min',
-                ),
-                _RecipeInfo(
-                  icon: Icons
-                      .local_fire_department_outlined,
-                  text:
-                      '${recipe.calories} kcal',
-                ),
-                _RecipeInfo(
-                  icon:
-                      Icons.fitness_center,
-                  text:
-                      '${recipe.protein}g protein',
-                ),
-              ],
-            ),
+              //Recipe information
+              Wrap(
+                spacing: 15,
+                runSpacing: 10,
+                children: infoItems,
+              ),
+            ],
 
             const SizedBox(height: 15),
 
@@ -299,9 +324,7 @@ class _RecipeInfo extends StatelessWidget {
           icon,
           size: 18,
         ),
-
         const SizedBox(width: 5),
-
         Text(text),
       ],
     );

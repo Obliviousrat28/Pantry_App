@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '/models/dietary_preferences.dart';
 import '/models/recipe.dart';
 import '/services/recipe_ai_service.dart';
 
@@ -15,56 +14,61 @@ class RecipesScreen extends StatefulWidget {
 }
 
 class _RecipesScreenState extends State<RecipesScreen> {
-  //Stores the selected dietary preferences
-  final DietaryPreferences preferences = DietaryPreferences();
-
-  //Service used to generate recipes
+  //Service used to load real recipes and generate AI recipes
   final RecipeService recipeService = RecipeService();
 
-  //Stores the generated recipes
-  List<Recipe> recipes = [];
+  //Stores real recipes returned by the recipe database
+  List<Recipe> realRecipes = [];
+
+  //Stores recipes created by AI
+  List<Recipe> aiRecipes = [];
 
   //Controls the loading state
   bool isLoading = false;
 
-  //Generates recipes using the selected preferences
+  //Tracks whether recommendations have been requested
+  bool hasGenerated = false;
+
+  //Loads real recipes and AI recipes using the latest saved user data
   Future<void> generateRecipes() async {
     setState(() {
       isLoading = true;
     });
 
     try {
-      //Requests recipes from the recipe service
-      final generatedRecipes =
-          await recipeService.generateRecipes(
-        preferences,
-      );
+      //Loads current inventory budget and preferences before requesting recipes
+      final recommendations =
+          await recipeService.generateRecipes();
 
       if (!mounted) return;
 
-      //Updates the recipe list
+      //Updates both recipe sections
       setState(() {
-        recipes = generatedRecipes;
+        realRecipes = recommendations.realRecipes;
+        aiRecipes = recommendations.aiRecipes;
+        hasGenerated = true;
       });
 
-      //Shows a success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Recipes generated successfully!',
+      //Shows a success message when at least one source returned recipes
+      if (!recommendations.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Recipe recommendations loaded successfully!',
+            ),
           ),
-        ),
-      );
+        );
+      }
     } catch (e) {
       debugPrint('Recipe error: $e');
 
       if (!mounted) return;
 
-      //Shows an error message
+      //Shows an error message if the request fails completely
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Failed to generate recipes: $e',
+            'Failed to load recipe recommendations: $e',
           ),
         ),
       );
@@ -88,6 +92,61 @@ class _RecipesScreenState extends State<RecipesScreen> {
     );
   }
 
+  //Builds one recipe result section
+  Widget buildRecipeSection({
+    required String title,
+    required String description,
+    required List<Recipe> recipes,
+    required String emptyMessage,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        Text(
+          description,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+          ),
+        ),
+
+        const SizedBox(height: 15),
+
+        if (recipes.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Text(
+              emptyMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+              ),
+            ),
+          )
+        else
+          ...recipes.map(
+            (recipe) => RecipeCard(
+              recipe: recipe,
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -106,7 +165,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
           ),
         ],
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -125,121 +183,81 @@ class _RecipesScreenState extends State<RecipesScreen> {
 
               const SizedBox(height: 8),
 
-              //Page description
+              //Explains which saved data is used for recommendations
               const Text(
-                'Choose your dietary preferences and let AI recommend recipes for you.',
+                'Recommendations use your saved dietary preferences, remaining budget, and current inventory.',
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 25),
 
-              //Dietary preferences title
-              const Text(
-                'Dietary Preferences',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              //Shows the information used by the recommendation system
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius:
+                      BorderRadius.circular(15),
                 ),
-              ),
-
-              const SizedBox(height: 10),
-
-              //Vegetarian preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Vegetarian',
+                child: const Column(
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Current inventory',
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.account_balance_wallet_outlined,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Remaining weekly budget',
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.restaurant_outlined,
+                          size: 20,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Saved dietary preferences',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                value: preferences.vegetarian,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.vegetarian =
-                        value ?? false;
-                  });
-                },
-              ),
-
-              //Vegan preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Vegan',
-                ),
-                value: preferences.vegan,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.vegan =
-                        value ?? false;
-                  });
-                },
-              ),
-
-              //Halal preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Halal',
-                ),
-                value: preferences.halal,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.halal =
-                        value ?? false;
-                  });
-                },
-              ),
-
-              //Gluten free preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Gluten Free',
-                ),
-                value: preferences.glutenFree,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.glutenFree =
-                        value ?? false;
-                  });
-                },
-              ),
-
-              //Dairy free preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'Dairy Free',
-                ),
-                value: preferences.dairyFree,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.dairyFree =
-                        value ?? false;
-                  });
-                },
-              ),
-
-              //High protein preference
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'High Protein',
-                ),
-                value: preferences.highProtein,
-                onChanged: (value) {
-                  setState(() {
-                    preferences.highProtein =
-                        value ?? false;
-                  });
-                },
               ),
 
               const SizedBox(height: 25),
 
-              //Button used to generate recipes
+              //Button used to request recipe recommendations
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -260,8 +278,8 @@ class _RecipesScreenState extends State<RecipesScreen> {
                         ),
                   label: Text(
                     isLoading
-                        ? 'Generating...'
-                        : 'Generate Recipes',
+                        ? 'Finding Recipes...'
+                        : 'Find Recipes',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -272,18 +290,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
 
               const SizedBox(height: 35),
 
-              //Recommended recipes title
-              const Text(
-                'Recommended Recipes',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              //Shows a loading indicator while recipes are generated
+              //Shows a loading indicator while recommendations are loaded
               if (isLoading)
                 const Padding(
                   padding: EdgeInsets.symmetric(
@@ -295,15 +302,15 @@ class _RecipesScreenState extends State<RecipesScreen> {
                         CircularProgressIndicator(),
                         SizedBox(height: 15),
                         Text(
-                          'Generating recipes...',
+                          'Finding recipes for you...',
                         ),
                       ],
                     ),
                   ),
                 ),
 
-              //Shows this message when there are no recipes
-              if (recipes.isEmpty && !isLoading)
+              //Shows the initial empty state before the first request
+              if (!hasGenerated && !isLoading)
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(25),
@@ -319,11 +326,9 @@ class _RecipesScreenState extends State<RecipesScreen> {
                         size: 50,
                         color: Colors.grey,
                       ),
-
                       SizedBox(height: 10),
-
                       Text(
-                        'Your AI-generated recipes will appear here.',
+                        'Your recipe recommendations will appear here.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: Colors.grey,
@@ -333,12 +338,28 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   ),
                 ),
 
-              //Displays all generated recipes
-              ...recipes.map(
-                (recipe) => RecipeCard(
-                  recipe: recipe,
+              //Shows real recipes and AI recipes in separate sections
+              if (hasGenerated && !isLoading) ...[
+                buildRecipeSection(
+                  title: 'Real Recipes',
+                  description:
+                      'Existing recipes matched to your inventory, budget, and preferences',
+                  recipes: realRecipes,
+                  emptyMessage:
+                      'No suitable real recipes were found for the current data',
                 ),
-              ),
+
+                const SizedBox(height: 30),
+
+                buildRecipeSection(
+                  title: 'AI Suggestions',
+                  description:
+                      'New recipe ideas created for your current situation',
+                  recipes: aiRecipes,
+                  emptyMessage:
+                      'AI suggestions are currently unavailable',
+                ),
+              ],
             ],
           ),
         ),
@@ -347,7 +368,7 @@ class _RecipesScreenState extends State<RecipesScreen> {
   }
 }
 
-//Card used to display a generated recipe
+//Card used to display a recipe recommendation
 class RecipeCard extends StatelessWidget {
   final Recipe recipe;
 
@@ -358,6 +379,36 @@ class RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Builds only the information that is available for this recipe
+    final infoItems = <Widget>[];
+
+    if (recipe.prepTime > 0) {
+      infoItems.add(
+        RecipeInfo(
+          icon: Icons.timer_outlined,
+          text: '${recipe.prepTime} min',
+        ),
+      );
+    }
+
+    if (recipe.calories > 0) {
+      infoItems.add(
+        RecipeInfo(
+          icon: Icons.local_fire_department_outlined,
+          text: '${recipe.calories} kcal',
+        ),
+      );
+    }
+
+    if (recipe.protein > 0) {
+      infoItems.add(
+        RecipeInfo(
+          icon: Icons.fitness_center,
+          text: '${recipe.protein}g protein',
+        ),
+      );
+    }
+
     return Card(
       margin: const EdgeInsets.only(
         bottom: 15,
@@ -368,6 +419,23 @@ class RecipeCard extends StatelessWidget {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
+            //Shows whether the recipe is real or AI generated
+            Chip(
+              avatar: Icon(
+                recipe.isRealRecipe
+                    ? Icons.menu_book_outlined
+                    : Icons.auto_awesome,
+                size: 17,
+              ),
+              label: Text(
+                recipe.isRealRecipe
+                    ? 'Real Recipe • ${recipe.sourceName}'
+                    : 'AI Generated',
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             //Recipe title
             Text(
               recipe.title,
@@ -388,32 +456,16 @@ class RecipeCard extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 15),
+            if (infoItems.isNotEmpty) ...[
+              const SizedBox(height: 15),
 
-            //Recipe information
-            Wrap(
-              spacing: 15,
-              runSpacing: 10,
-              children: [
-                RecipeInfo(
-                  icon: Icons.timer_outlined,
-                  text:
-                      '${recipe.prepTime} min',
-                ),
-                RecipeInfo(
-                  icon: Icons
-                      .local_fire_department_outlined,
-                  text:
-                      '${recipe.calories} kcal',
-                ),
-                RecipeInfo(
-                  icon:
-                      Icons.fitness_center,
-                  text:
-                      '${recipe.protein}g protein',
-                ),
-              ],
-            ),
+              //Recipe information
+              Wrap(
+                spacing: 15,
+                runSpacing: 10,
+                children: infoItems,
+              ),
+            ],
 
             const SizedBox(height: 15),
 
@@ -458,16 +510,13 @@ class RecipeInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize:
-          MainAxisSize.min,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
           size: 18,
         ),
-
         const SizedBox(width: 5),
-
         Text(text),
       ],
     );

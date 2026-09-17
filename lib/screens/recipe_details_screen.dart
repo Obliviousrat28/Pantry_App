@@ -87,6 +87,36 @@ class _RecipeDetailsScreenState
     //Stores the current recipe for easier access
     final recipe = widget.recipe;
 
+    //Builds only the information that is available for this recipe
+    final infoItems = <Widget>[];
+
+    if (recipe.prepTime > 0) {
+      infoItems.add(
+        _InfoItem(
+          icon: Icons.timer_outlined,
+          text: '${recipe.prepTime} min',
+        ),
+      );
+    }
+
+    if (recipe.calories > 0) {
+      infoItems.add(
+        _InfoItem(
+          icon: Icons.local_fire_department_outlined,
+          text: '${recipe.calories} kcal',
+        ),
+      );
+    }
+
+    if (recipe.protein > 0) {
+      infoItems.add(
+        _InfoItem(
+          icon: Icons.fitness_center,
+          text: '${recipe.protein}g protein',
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(recipe.title),
@@ -113,6 +143,23 @@ class _RecipeDetailsScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            //Shows the recipe source
+            Chip(
+              avatar: Icon(
+                recipe.isRealRecipe
+                    ? Icons.menu_book_outlined
+                    : Icons.auto_awesome,
+                size: 17,
+              ),
+              label: Text(
+                recipe.isRealRecipe
+                    ? 'Real Recipe • ${recipe.sourceName}'
+                    : 'AI Generated',
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             //Recipe title
             Text(
               recipe.title,
@@ -133,27 +180,28 @@ class _RecipeDetailsScreenState
               ),
             ),
 
-            const SizedBox(height: 25),
+            if (infoItems.isNotEmpty) ...[
+              const SizedBox(height: 25),
 
-            //Recipe information
-            Wrap(
-              spacing: 20,
-              runSpacing: 10,
-              children: [
-                _InfoItem(
-                  icon: Icons.timer_outlined,
-                  text: '${recipe.prepTime} min',
+              //Recipe information
+              Wrap(
+                spacing: 20,
+                runSpacing: 10,
+                children: infoItems,
+              ),
+            ],
+
+            //Explains why nutrition values may be missing from real recipes
+            if (recipe.isRealRecipe && infoItems.isEmpty) ...[
+              const SizedBox(height: 20),
+              Text(
+                'Nutrition and preparation time are not provided by this recipe source.',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
                 ),
-                _InfoItem(
-                  icon: Icons.local_fire_department_outlined,
-                  text: '${recipe.calories} kcal',
-                ),
-                _InfoItem(
-                  icon: Icons.fitness_center,
-                  text: '${recipe.protein}g protein',
-                ),
-              ],
-            ),
+              ),
+            ],
 
             const SizedBox(height: 30),
 
@@ -293,9 +341,7 @@ class _InfoItem extends StatelessWidget {
           icon,
           size: 20,
         ),
-
         const SizedBox(width: 6),
-
         Text(
           text,
           style: const TextStyle(
