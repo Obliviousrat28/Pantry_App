@@ -82,9 +82,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(), // Dismiss keyboard when tapping outside
+      child: Scaffold(resizeToAvoidBottomInset: false,
+      appBar: AppBar(title:const Text('Settings')),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
@@ -140,6 +141,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             }).toList(),
           ),
         ],
+       ),
       ),
     );
   }
