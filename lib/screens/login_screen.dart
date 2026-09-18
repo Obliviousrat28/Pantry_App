@@ -23,21 +23,32 @@ class _LoginScreenState extends State<LoginScreen>
   String errorMessage = '';
 
   void login() async
-{
-  setState(() {
-    errorMessage = LoginValidation.validate(
-      userEmailController.text,
-      userPasswordController.text,
-    );
-  });
-
-  if (errorMessage.isEmpty)
   {
-    try{
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: userEmailController.text.trim(),
-        password: userPasswordController.text.trim(),
+    setState(() {
+      errorMessage = LoginValidation.validate(
+        userEmailController.text,
+        userPasswordController.text,
       );
+    });
+
+    if (errorMessage.isEmpty)
+    {
+      try{
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: userEmailController.text.trim(),
+          password: userPasswordController.text.trim(),
+        );
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login successful!')),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      });
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message ?? 'An error occurred during login.';
