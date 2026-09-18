@@ -134,13 +134,13 @@ class _AddItemDialogState extends State<AddItemDialog> {
   }
 
   Future<void> _scanBarcode() async {
-    final code = await _barcodeService.scanBarcode(context);
-    if (code == null) return;
+    final result = await _barcodeService.scanBarcode(context);
+    if (result == null) return;
     if (!mounted) return;
     setState(() {
-      _scannedBarcode = code;
+      _scannedBarcode = result.code;
       if (_nameController.text.isEmpty) {
-        _nameController.text = code;
+        _nameController.text = result.productName ?? result.code;
       }
     });
   }

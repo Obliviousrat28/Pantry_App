@@ -14,6 +14,7 @@ dependencies:
   google_mlkit_image_labeling: ^0.16.1
   image_picker: ^1.2.3
   permission_handler: ^13.0.2
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
