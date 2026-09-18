@@ -210,7 +210,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onDeleteItem: _deleteItem,
       ),
       BudgetScreen(
-        remainingBudget: remainingBudget,
         weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
       ),
