@@ -76,15 +76,15 @@ class AddItemFormState extends State<AddItemForm> {
 
   void submit() {
     if (_formKey.currentState!.validate()) {
-      final double parsedPrice = double.tryParse(priceController.text) ?? 0.0;
-      final double parsedQty = double.tryParse(qtyController.text) ?? 0.0;
+      final double parsedQty = double.parse(qtyController.text);
+      final double parsedPrice = isPriceUnknown ? 0.0 : double.parse(priceController.text);
 
       final newItem = InventoryItem(
         itemId: widget.initialData?.itemId ?? DateTime.now().microsecondsSinceEpoch.toString(),
         userId: 'user_1',
         itemName: nameController.text,
         itemQuantity: parsedQty,
-        price: isPriceUnknown ? 0.0 : parsedPrice,
+        price: parsedPrice,
         priceUnknown: isPriceUnknown,
         expiryDate: selectedDate ?? DateTime.now(),
         storageZone: _selectedZone,
@@ -122,7 +122,11 @@ class AddItemFormState extends State<AddItemForm> {
             controller: qtyController,
             decoration: const InputDecoration(labelText: 'Quantity'),
             keyboardType: TextInputType.number,
-            validator: (val) => val == null || val.isEmpty ? 'Enter a quantity' : null,
+            validator: (val) {
+              if (val == null || val.isEmpty) return 'Enter a quantity';
+              if (double.tryParse(val) == null) return 'Enter a valid number';
+              return null;
+            },
           ),
           TextFormField(
             controller: priceController,
@@ -131,6 +135,12 @@ class AddItemFormState extends State<AddItemForm> {
               labelText: isPriceUnknown ? 'Price: N/A' : 'Price',
             ),
             keyboardType: TextInputType.number,
+            validator: (val) {
+              if (isPriceUnknown) return null; // Skip validation if price is unknown
+              if (val == null || val.isEmpty) return 'Enter a price';
+              if (double.tryParse(val) == null) return 'Enter a valid price';
+              return null;
+            },
           ),
           CheckboxListTile(
             contentPadding: EdgeInsets.zero,
