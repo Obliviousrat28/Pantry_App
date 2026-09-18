@@ -4,6 +4,7 @@ import '../models/storage_zone.dart';
 import '../widgets/item_add_dialog.dart';
 import '../widgets/item_card.dart';
 
+// A screen that displays the inventory items grouped by their storage zones.
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
 
@@ -11,9 +12,11 @@ class InventoryScreen extends StatefulWidget {
   State<InventoryScreen> createState() => _InventoryScreenState();
 }
 
+// The state class for the InventoryScreen, managing the list of inventory items and their interactions.
 class _InventoryScreenState extends State<InventoryScreen> {
   final List<InventoryItem> _items = [];
 
+  // Opens a dialog to add a new inventory item.
   void _openAddItemDialog() {
     showDialog(
       context: context,
@@ -27,6 +30,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  // Opens a dialog to edit an existing inventory item.
   void _openEditItemDialog(InventoryItem item) {
     showDialog(
       context: context,
@@ -48,11 +52,13 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
+  // Builds the widget tree for the InventoryScreen, displaying inventory items grouped by storage zones.
   @override
   Widget build(BuildContext context) {
     // Sort items by expiry date (earliest first)
     _items.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
 
+    // Group items by storage zone
     return Scaffold(
       appBar: AppBar(title: const Text('Inventory')),
       body: ListView(
@@ -61,6 +67,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           // Filter items for the specific storage zone
           final zoneItems = _items.where((item) => item.storageZone == zone).toList();
 
+          // Return a column for each storage zone, displaying its items or a message if there are no items.
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
