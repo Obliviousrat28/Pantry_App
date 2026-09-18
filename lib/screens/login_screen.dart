@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen>
         const SnackBar(content: Text('Login successful!')),
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!context.mounted) return;
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
