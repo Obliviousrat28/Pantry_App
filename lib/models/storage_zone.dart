@@ -1,17 +1,16 @@
-enum StorageZone {
-  FRIDGE,
-  FREEZER,
-  PANTRY,
-}
+
+enum StorageZone { fridge, freezer, pantry }
+
+
 
 extension StorageZoneExtension on StorageZone {
   String get displayName {
     switch (this) {
-      case StorageZone.FRIDGE:
+      case StorageZone.fridge:
         return 'Fridge';
-      case StorageZone.FREEZER:
+      case StorageZone.freezer:
         return 'Freezer';
-      case StorageZone.PANTRY:
+      case StorageZone.pantry:
         return 'Pantry';
     }
   }

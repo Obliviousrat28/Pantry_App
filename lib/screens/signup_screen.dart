@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../models/user.dart';
 import '../widgets/signup/signup_username_field.dart';
 import '../widgets/signup/signup_email_field.dart';
@@ -9,7 +8,8 @@ import '../widgets/signup/signup_dietary_preferences.dart';
 import '../widgets/signup/signup_budget_field.dart';
 import '../widgets/signup/signup_error_message.dart';
 import '../services/signup_validation.dart';
-import '../services/user_service.dart';
+import '../services/storage_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 
 class SignupScreen extends StatefulWidget
 {
@@ -21,6 +21,7 @@ class SignupScreen extends StatefulWidget
 
 class _SignupScreenState extends State<SignupScreen>
 {
+  final StorageService _storageService = StorageService();
   final userNameController = TextEditingController();
   final userEmailController = TextEditingController();
   final userPasswordController = TextEditingController();
@@ -30,7 +31,7 @@ class _SignupScreenState extends State<SignupScreen>
 
   List<String> dietaryPreference = [];
 
-  void register()
+  void register() async
   {
     setState(() {
       errorMessage = SignupValidation.validate(
@@ -44,20 +45,31 @@ class _SignupScreenState extends State<SignupScreen>
 
     if (errorMessage.isEmpty)
     {
-      const uuid = Uuid();
-      String userId = uuid.v4();
+      try{
+        final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: userEmailController.text.trim(),
+          password: userPasswordController.text.trim(),
+        );
 
-      User newUser = User(
-        userId: userId,
-        userName: userNameController.text,
-        userEmail: userEmailController.text,
-        userPassword: userPasswordController.text,
+        final userId =  credential.user!.uid;
+
+        User newUser = User(
+          userId: userId,
+          userName: userNameController.text,
+          userEmail: userEmailController.text,
+          userPassword: userPasswordController.text,
+          weeklyBudgetGoal: double.parse(weeklyBudgetGoalController.text),
+            dietaryPreference: dietaryPreference,
+        );
+
+      await _storageService.saveUserData(
+        userName: userNameController.text.trim(),
+        email: userEmailController.text.trim(),
         weeklyBudgetGoal: double.parse(weeklyBudgetGoalController.text),
-        dietaryPreference: dietaryPreference,
+        dietaryPreferences: dietaryPreference,
       );
 
-      UserService userService = UserService();
-      userService.registerUser(newUser);
+      if(!context.mounted) return;
 
       print('User registered: ${newUser.userName}');
       print('User ID: ${newUser.userId}');
@@ -69,8 +81,13 @@ class _SignupScreenState extends State<SignupScreen>
       );
 
       Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message ?? 'An error occurred during registration.';
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context)

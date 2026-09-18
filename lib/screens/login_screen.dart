@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/login/login_email_field.dart';
 import '../widgets/login/login_password_field.dart';
 import '../widgets/login/login_error_message.dart';
 import '../services/login_validation.dart';
 import 'signup_screen.dart';
-import '../services/user_service.dart';
 import '../screens/main_navigation_screen.dart';
-import '../models/user.dart';
+
 
 class LoginScreen extends StatefulWidget
 {
@@ -22,7 +22,7 @@ class _LoginScreenState extends State<LoginScreen>
   final userPasswordController = TextEditingController();
   String errorMessage = '';
 
-  void login()
+  void login() async
   {
     setState(() {
       errorMessage = LoginValidation.validate(
@@ -33,25 +33,29 @@ class _LoginScreenState extends State<LoginScreen>
 
     if (errorMessage.isEmpty)
     {
-      UserService userService = UserService();
-      User? user = userService.validateLogin(
-        userEmailController.text,
-        userPasswordController.text,
-      );
+      try{
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: userEmailController.text.trim(),
+          password: userPasswordController.text.trim(),
+        );
 
-      if (user != null)
-      {
-        Navigator.pushReplacement(
-          context,
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login successful!')),
+      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!context.mounted) return;
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
         );
-      } else {
-        setState(() {
-          errorMessage = 'Email or password is incorrect';
-        });
-      }
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message ?? 'An error occurred during login.';
+      });
     }
   }
+}
 
   @override
   Widget build(BuildContext context)

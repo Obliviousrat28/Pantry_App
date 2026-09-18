@@ -1,14 +1,16 @@
 import 'storage_zone.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class InventoryItem {
-  final String itemId; 
-  final String userId; 
+  final String itemId;
+  final String userId;
   String itemName;
   double itemQuantity;
   double price;
   bool priceUnknown;
   DateTime expiryDate;
   StorageZone storageZone;
+  final String? barcode;
 
   InventoryItem({
     required this.itemId,
@@ -19,9 +21,9 @@ class InventoryItem {
     this.priceUnknown = false,
     required this.expiryDate,
     required this.storageZone,
+    this.barcode,
   });
 
-  // Helper method to update an item while keeping its existing ID
   void edit({
     String? name,
     double? quantity,
@@ -38,9 +40,6 @@ class InventoryItem {
     if (priceUnknown != null) this.priceUnknown = priceUnknown;
   }
 
-  void delete() {} //empty it to be implemented later whaen a database is added
-
-  //for the UML diagram
   bool isExpired() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -48,12 +47,41 @@ class InventoryItem {
     return expiry.isBefore(today);
   }
 
-  //for the UML diagram 
   bool isExpiringSoon() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final expiry = DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
     final difference = expiry.difference(today).inDays;
     return difference >= 0 && difference <= 3;
+  }
+
+  Map<String, dynamic> toFirestore() => {
+    'itemId': itemId,
+    'userId': userId,
+    'itemName': itemName,
+    'itemQuantity': itemQuantity,
+    'price': price,
+    'priceUnknown': priceUnknown,
+    'expiryDate': Timestamp.fromDate(expiryDate),
+    'storageZone': storageZone.name,
+    'barcode': barcode,
+  };
+
+  factory InventoryItem.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final json = doc.data()!;
+    return InventoryItem(
+      itemId: doc.id, // Always use doc.id directly from Firestore
+      userId: json['userId'] ?? '',
+      itemName: json['itemName'] ?? '',
+      itemQuantity: (json['itemQuantity'] as num?)?.toDouble() ?? 0.0,
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      priceUnknown: json['priceUnknown'] ?? false,
+      expiryDate: (json['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      storageZone: StorageZone.values.firstWhere(
+        (e) => e.name == json['storageZone'],
+        orElse: () => StorageZone.pantry,
+      ),
+      barcode: json['barcode'],
+    );
   }
 }

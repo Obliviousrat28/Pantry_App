@@ -22,6 +22,11 @@ class SignupValidation
       return 'All fields are required';
     }
 
+    final emailRegex = RegExp(r'^[\w\.\-]+@[\w\-]+\.[a-zA-Z]{2,}$');
+    if (!emailRegex.hasMatch(email))
+    {
+      return 'Please enter a valid email address';
+    }
     return '';
   }
 
@@ -32,11 +37,22 @@ class SignupValidation
       return 'All fields are required';
     }
 
-    if (password.length < 6)
+    if (password.length < 8)
     {
-      return 'Password must be at least 6 characters';
+      return 'Password must be at least 8 characters';
     }
 
+    final digitCount = RegExp(r'\d').allMatches(password).length;
+    if (digitCount < 2)
+    {
+      return 'Password must contain at least 2 digits';
+    }
+
+    if(!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password))
+    {
+      return 'Password must contain at least 1 capital letter';
+    }
+    
     return '';
   }
 

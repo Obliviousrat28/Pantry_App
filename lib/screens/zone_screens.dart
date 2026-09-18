@@ -1,60 +1,38 @@
 import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
+import '../models/storage_zone.dart';
 import '../widgets/item_card.dart';
 import '../widgets/item_add_dialog.dart';
-import '../models/storage_zone.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.title});
+class ZoneScreen extends StatelessWidget {
+  const ZoneScreen({
+    super.key,
+    required this.title,
+    required this.items,
+    required this.onAddItem,
+    required this.onEditItem,
+    required this.onDeleteItem,
+  });
 
   final String title;
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final List<InventoryItem> _items = [];
-
-  void _sortItemsByExpiry() {
-    _items.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
-  }
+  final List<InventoryItem> items;
+  final Function(InventoryItem) onAddItem;
+  final Function(InventoryItem) onEditItem;
+  final Function(InventoryItem) onDeleteItem;
 
   List<InventoryItem> _getItemsForZone(StorageZone zone) {
-    return _items.where((item) => item.storageZone == zone).toList();
+    final zoneItems = items.where((item) => item.storageZone == zone).toList();
+    zoneItems.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
+    return zoneItems;
   }
 
-  void _showPopUpScreen() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ItemAddDialog(
-          onAddItem: (newItem) {
-            setState(() {
-              _items.add(newItem);
-              _sortItemsByExpiry();
-            });
-          },
-        );
-      },
-    );
-  }
-
-  void _editItem(InventoryItem item) {
+  void _editItem(BuildContext context, InventoryItem item) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return ItemAddDialog(
           initialData: item,
-          onAddItem: (updatedItem) {
-            setState(() {
-              final index = _items.indexWhere((element) => element.itemId == item.itemId);
-              if (index != -1) {
-                _items[index] = updatedItem;
-                _sortItemsByExpiry();
-              }
-            });
-          },
+          onAddItem: onEditItem,
         );
       },
     );
@@ -65,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(title),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -84,7 +62,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ExpansionTile(
                 initiallyExpanded: false,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                title: Text('${zone.displayName} (${zoneItems.length})',
+                title: Text(
+                  '${zone.displayName} (${zoneItems.length})',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
@@ -121,10 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (BuildContext context) {
                                 return AlertDialog(
                                   title: const Text('Confirm Delete'),
-                                  content: Text('Are you sure you want to delete "${item.itemName}"?'),
+                                  content: Text(
+                                    'Are you sure you want to delete "${item.itemName}"?'),
                                   actions: [
                                     TextButton(
-                                      onPressed: () => Navigator.of(context).pop(false),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
                                       child: const Text('Cancel'),
                                     ),
                                     ElevatedButton(
@@ -132,7 +113,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
                                       ),
-                                      onPressed: () => Navigator.of(context).pop(true),
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
                                       child: const Text('Delete'),
                                     ),
                                   ],
@@ -141,51 +123,33 @@ class _HomeScreenState extends State<HomeScreen> {
                             );
                           },
                           onDismissed: (direction) {
-                            final deletedItem = item;
-                            final deletedIndex = _items.indexWhere((element) => element.itemId == item.itemId);
+                            onDeleteItem(item);
 
-                            // 1. Remove item from local state immediately
-                            if (deletedIndex != -1) {
-                              setState(() {
-                                _items.removeAt(deletedIndex);
-                              });
-                            }
-
-                            // 2. Clear any active snackbars
                             final messenger = ScaffoldMessenger.of(context);
                             messenger.clearSnackBars();
 
-                            // 3. Show the SnackBar without relying solely on internal auto-dismissal
                             final controller = messenger.showSnackBar(
                               SnackBar(
-                                duration: const Duration(seconds: 4),
-                                content: Text('${deletedItem.itemName} deleted'),
+                                duration: const Duration(seconds: 3),
+                                dismissDirection: DismissDirection.horizontal,
+                                content: Text('${item.itemName} deleted'),
                                 action: SnackBarAction(
                                   label: 'UNDO',
                                   textColor: Colors.amber,
                                   onPressed: () {
-                                    setState(() {
-                                      if (!_items.any((e) => e.itemId == deletedItem.itemId)) {
-                                        _items.insert(
-                                          deletedIndex > _items.length ? _items.length : deletedIndex,
-                                          deletedItem,
-                                        );
-                                        _sortItemsByExpiry();
-                                      }
-                                    });
+                                    onAddItem(item);
                                   },
                                 ),
                               ),
                             );
-                            Future.delayed(const Duration(seconds: 4), () {
-                              if (mounted) {
-                                controller.close();
-                              }
+
+                            Future.delayed(const Duration(seconds: 3), () {
+                              controller.close();
                             });
                           },
                           child: ItemCard(
                             item: item,
-                            onEdit: () => _editItem(item),
+                            onEdit: () => _editItem(context, item),
                           ),
                         );
                       }).toList(),
@@ -193,11 +157,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         }).toList(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showPopUpScreen,
-        tooltip: 'Add Item',
-        child: const Icon(Icons.add),
       ),
     );
   }
