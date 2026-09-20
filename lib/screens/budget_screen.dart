@@ -1,23 +1,32 @@
 import 'package:flutter/material.dart';
 import '../models/meal_log.dart';
 
-
 class BudgetScreen extends StatelessWidget {
-  final double remainingBudget;
   final double weeklyBudgetGoal;
   final List<MealLog> mealLogs;
 
   const BudgetScreen({
     super.key,
-    required this.remainingBudget,
     required this.mealLogs,
     required this.weeklyBudgetGoal,
   });
 
+  bool _isThisWeek(DateTime date) {
+    final now = DateTime.now();
+    final startOfWeek = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+    return !date.isBefore(startOfWeek) && date.isBefore(endOfWeek);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final spent = weeklyBudgetGoal - remainingBudget;
-    final remaining = remainingBudget;
+    final thisWeeksLogs = mealLogs.where((log) => _isThisWeek(log.mealDate)).toList();
+    final spent = thisWeeksLogs.fold<double>(
+      0.0,
+      (sum, log) => sum + (double.tryParse(log.mealPrice) ?? 0.0),
+    );
+    final remaining = weeklyBudgetGoal - spent;
     final overBudget = remaining < 0;
 
     return Scaffold(
@@ -39,7 +48,7 @@ class BudgetScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Expanded(child: _buildMealList(mealLogs)),
+            Expanded(child: _buildMealList(thisWeeksLogs)),
           ],
         ),
       ),

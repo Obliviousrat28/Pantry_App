@@ -50,7 +50,7 @@ class SignupValidation
 
     if(!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password))
     {
-      return 'Password must contain at least 1 capital letter';
+      return 'Password must contain at least 1 special character';
     }
     
     return '';

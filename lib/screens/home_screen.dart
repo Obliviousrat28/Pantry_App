@@ -4,6 +4,7 @@ import '../widgets/item_card.dart';
 import '../widgets/item_add_dialog.dart';
 import '../models/storage_zone.dart';
 
+/// A screen that displays the inventory items grouped by their storage zones.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});
 
@@ -13,17 +14,21 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+// The state class for the HomeScreen, managing the list of inventory items and their interactions.
 class _HomeScreenState extends State<HomeScreen> {
   final List<InventoryItem> _items = [];
 
+  // Sorts the inventory items by their expiry date in ascending order.
   void _sortItemsByExpiry() {
     _items.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
   }
 
+  // Retrieves a list of inventory items that belong to the specified storage zone.
   List<InventoryItem> _getItemsForZone(StorageZone zone) {
     return _items.where((item) => item.storageZone == zone).toList();
   }
 
+  // Opens a dialog to add a new inventory item.
   void _showPopUpScreen() {
     showDialog(
       context: context,
@@ -40,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Opens a dialog to edit an existing inventory item.
   void _editItem(InventoryItem item) {
     showDialog(
       context: context,
@@ -60,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Builds the widget tree for the HomeScreen, displaying inventory items grouped by storage zones.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: StorageZone.values.map((zone) {
           final zoneItems = _getItemsForZone(zone);
 
+          // Return a card for each storage zone, displaying its items in an expandable list.
           return Card(
             elevation: 1,
             margin: const EdgeInsets.only(bottom: 12),
@@ -79,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(color: Colors.grey.shade300),
             ),
+            // Use Theme to customize the ExpansionTile's appearance, including removing the divider line.
             child: Theme(
               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
               child: ExpansionTile(
@@ -91,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 children: zoneItems.isEmpty
-                    ? [
+                    ? [// Display a message when there are no items in the storage zone.
                         const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20.0),
                           child: Center(
@@ -101,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                      ]
+                      ]// Display the list of items in the storage zone.
                     : zoneItems.map((item) {
                         return Dismissible(
                           key: ValueKey(item.itemId),
@@ -115,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                           ),
+                          // Show a confirmation dialog before dismissing the item.
                           confirmDismiss: (direction) async {
                             return await showDialog<bool>(
                               context: context,
@@ -126,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     TextButton(
                                       onPressed: () => Navigator.of(context).pop(false),
                                       child: const Text('Cancel'),
+                                      // Close the dialog without deleting the item.
                                     ),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
@@ -139,23 +150,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                 );
                               },
                             );
-                          },
+                          },// Handle the dismissal of the item, including showing a SnackBar with an UNDO option.
                           onDismissed: (direction) {
                             final deletedItem = item;
                             final deletedIndex = _items.indexWhere((element) => element.itemId == item.itemId);
 
-                            // 1. Remove item from local state immediately
+                            // Remove item from local state immediately
                             if (deletedIndex != -1) {
                               setState(() {
                                 _items.removeAt(deletedIndex);
                               });
                             }
 
-                            // 2. Clear any active snackbars
+                            // Clear any active snackbars
                             final messenger = ScaffoldMessenger.of(context);
                             messenger.clearSnackBars();
 
-                            // 3. Show the SnackBar without relying solely on internal auto-dismissal
+                            // Show the SnackBar without relying solely on internal auto-dismissal
                             final controller = messenger.showSnackBar(
                               SnackBar(
                                 duration: const Duration(seconds: 4),
@@ -164,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   label: 'UNDO',
                                   textColor: Colors.amber,
                                   onPressed: () {
-                                    setState(() {
+                                    setState(() {// Restore the deleted item if UNDO is pressed, ensuring it is not duplicated in the list.
                                       if (!_items.any((e) => e.itemId == deletedItem.itemId)) {
                                         _items.insert(
                                           deletedIndex > _items.length ? _items.length : deletedIndex,
@@ -176,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                               ),
-                            );
+                            );// Automatically close the SnackBar after 4 seconds to prevent it from lingering on the screen.
                             Future.delayed(const Duration(seconds: 4), () {
                               if (mounted) {
                                 controller.close();

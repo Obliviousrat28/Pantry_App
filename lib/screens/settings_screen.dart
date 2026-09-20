@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide User;
 
 class SettingsScreen extends StatefulWidget {
   final User? user;
@@ -140,8 +141,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               );
             }).toList(),
           ),
-        ],
-       ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+          onPressed: () async {
+            await FirebaseAuth.instance.signOut();
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade100),
+          child: const Text('Sign Out'),
+          ),
+          ],
+        ),
       ),
     );
   }
