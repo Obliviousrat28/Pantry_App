@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import '../models/inventory_item.dart';
+import '../models/storage_zone.dart';
 
 //***** AI CAMERA FEATURE - START *****
 // StorageZone is defined further down under Add Item, but is used
@@ -104,7 +106,6 @@ class GeminiVisionClient implements AIApiClient {
         ),
       ];
     } catch (e) {
-      // network error, bad/missing API key, rate limit, etc — treat
       // it the same as "couldn't identify anything" rather than crash
       return [];
     }
@@ -122,6 +123,24 @@ class RecognizedItem {
     required this.confidenceScore,
     required this.suggestedQuantity,
   });
+
+  InventoryItem convertToInventoryItem({
+    String? userId,
+    required StorageZone storageZone,
+    DateTime? expiryDate,
+    double? price,
+  }) {
+    return InventoryItem(
+      itemId: DateTime.now().millisecondsSinceEpoch.toString(),
+      userId: userId ?? 'user_1',
+      itemName: suggestedName,
+      itemQuantity: suggestedQuantity.toDouble(),
+      priceUnknown: price == null,
+      price: price ?? 0.0,
+      expiryDate: expiryDate ?? DateTime.now(),
+      storageZone: storageZone,
+    );
+  }
 }
 
 // CAMERA RECOGNITION — matches CameraRecognition in the diagram.
