@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'barcode_scanner.dart';
 
 //***** ADD ITEM WIDGET - START *****
 // StorageZone enum: matches the diagram's StorageZone.
@@ -91,11 +89,17 @@ class InventoryItem {
   }
 }
 
-// the form that pops up when i hit add item
+// the form that pops up when i hit add item. initialName and
+// initialBarcode get passed in when the camera already found
+// something (a scanned barcode, or an AI best-guess label) so the
+// form opens pre-filled instead of blank. scanning itself no longer
+// happens from inside this dialog — it all happens from the single
+// camera button on the home screen before this dialog even opens.
 class AddItemDialog extends StatefulWidget {
-  final String? initialName; // pre-fills the name field, e.g. from AI identify
+  final String? initialName;
+  final String? initialBarcode;
 
-  const AddItemDialog({super.key, this.initialName});
+  const AddItemDialog({super.key, this.initialName, this.initialBarcode});
 
   @override
   State<AddItemDialog> createState() => _AddItemDialogState();
@@ -112,16 +116,13 @@ class _AddItemDialogState extends State<AddItemDialog> {
   bool _priceUnknown = false;
   String? _scannedBarcode;
 
-  // uses the BarcodeScannerService defined above instead of scanning
-  // logic living directly in this class
-  final BarcodeScannerService _barcodeService = BarcodeScannerService();
-
   @override
   void initState() {
     super.initState();
     if (widget.initialName != null) {
       _nameController.text = widget.initialName!;
     }
+    _scannedBarcode = widget.initialBarcode;
   }
 
   @override
@@ -129,20 +130,7 @@ class _AddItemDialogState extends State<AddItemDialog> {
     _nameController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
-    _barcodeService.close();
     super.dispose();
-  }
-
-  Future<void> _scanBarcode() async {
-    final result = await _barcodeService.scanBarcode(context);
-    if (result == null) return;
-    if (!mounted) return;
-    setState(() {
-      _scannedBarcode = result.code;
-      if (_nameController.text.isEmpty) {
-        _nameController.text = result.productName ?? result.code;
-      }
-    });
   }
 
   Future<void> _pickExpiryDate() async {
@@ -186,16 +174,17 @@ class _AddItemDialogState extends State<AddItemDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              OutlinedButton.icon(
-                onPressed: _scanBarcode,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: Text(
-                  _scannedBarcode == null
-                      ? 'Scan Barcode'
-                      : 'Scanned: $_scannedBarcode',
+              // just shows what the camera found, if anything — no
+              // button here anymore, scanning happens from the main
+              // camera button on the home screen before this opens
+              if (_scannedBarcode != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Scanned barcode: $_scannedBarcode',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: 'Item name'),
