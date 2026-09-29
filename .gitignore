@@ -43,6 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+<<<<<<< HEAD
+
+# API keys - never commit real keys
+lib/api_keys.dart
+=======
 ios/build/
 
 # iOS/XCode related
@@ -73,3 +78,4 @@ ios/build/
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+>>>>>>> origin/main

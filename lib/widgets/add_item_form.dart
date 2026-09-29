@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 import '../services/barcode_scanner.dart';
+import '../services/ai_camera_recognition.dart';
 
 class AddItemForm extends StatefulWidget {
   final Function(InventoryItem) onAddItem;
@@ -64,14 +65,42 @@ class AddItemFormState extends State<AddItemForm> {
   }
 
   Future<void> _scanBarcode() async {
-    final code = await _barcodeService.scanBarcode(context);
-    if (code == null || !mounted) return;
+    final photo = await _barcodeService.capturePhoto(context);
+    if (photo == null || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    // still read the barcode digits if there are any, kept as metadata
+    final code = await _barcodeService.scanBarcodeFromFile(photo);
+
+    // Gemini reads the actual photo, the packaging, the label, or the
+    // fruit itself, and names the product directly, whether or not the
+    // photo has a barcode in it
+    final cameraRecognition = CameraRecognition(aiClient: GeminiVisionClient());
+    final recognizedItems = await cameraRecognition.recognizeItems(photo);
+    if (!mounted) return;
+    Navigator.of(context).pop(); // close the spinner
+
     setState(() {
-      _scannedBarcode = code;
-      if (nameController.text.isEmpty) {
+      if (code != null) {
+        _scannedBarcode = code;
+      }
+      if (recognizedItems.isNotEmpty) {
+        nameController.text = recognizedItems.first.suggestedName;
+      } else if (code != null && nameController.text.isEmpty) {
         nameController.text = code;
       }
     });
+
+    if (recognizedItems.isEmpty && code == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't recognize the item, try again or type it in manually")),
+      );
+    }
   }
 
   void submit() {
