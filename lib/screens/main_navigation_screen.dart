@@ -10,6 +10,7 @@ import 'budget_screen.dart';
 import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
+import 'history_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -214,6 +215,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
       ),
       RecipesScreen(),
+      const HistoryScreen(),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
