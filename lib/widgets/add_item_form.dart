@@ -64,7 +64,7 @@ class AddItemFormState extends State<AddItemForm> {
     super.dispose();
   }
 
-  Future<void> _scanBarcode() async {
+    Future<void> _scanBarcode() async {
     final photo = await _barcodeService.capturePhoto(context);
     if (photo == null || !mounted) return;
 
@@ -90,11 +90,26 @@ class AddItemFormState extends State<AddItemForm> {
         _scannedBarcode = code;
       }
       if (recognizedItems.isNotEmpty) {
-        nameController.text = recognizedItems.first.suggestedName;
+        final best = recognizedItems.first;
+        nameController.text = best.suggestedName;
+        // pre-fill the expiry with Gemini's shelf life estimate, if it gave one
+        if (best.estimatedExpiryDate != null) {
+          selectedDate = best.estimatedExpiryDate;
+        }
       } else if (code != null && nameController.text.isEmpty) {
         nameController.text = code;
       }
     });
+
+    if (recognizedItems.isNotEmpty &&
+        recognizedItems.first.estimatedExpiryDate != null &&
+        mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Expiry date is an estimate, please check it'),
+        ),
+      );
+    }
 
     if (recognizedItems.isEmpty && code == null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

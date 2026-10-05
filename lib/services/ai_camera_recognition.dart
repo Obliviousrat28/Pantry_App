@@ -83,30 +83,46 @@ class GeminiVisionClient implements AIApiClient {
       final response = await Gemini.instance.textAndImage(
         text:
             'Identify the single food or grocery item in this photo. '
-            'Reply with ONLY the item name in Title Case, nothing else '
-            '(e.g. "Apple", "Mountain Dew", "Green Valley Pure Milk"). '
+            'Reply with ONLY this format on one line: ItemName|ShelfLifeDays '
+            'ItemName is in Title Case. ShelfLifeDays is a whole number, your '
+            'best estimate of how many days this item normally stays good from '
+            'today when stored properly (e.g. 7 for an apple, 5 for fresh '
+            'milk, 180 for canned food). '
+            'Examples: Apple|7 or Mountain Dew|180 or Green Valley Milk|5. '
             'If you cannot tell what it is, reply with exactly "Unknown".',
         images: [imageBytes],
       );
 
-      // .output is a convenience getter that concatenates whatever text
-      // came back, without us having to manually unwrap Part objects
-      // (whose exact shape changed in this package version)
-      final text = (response?.output ?? '').trim();
-
-      if (text.isEmpty || text.toLowerCase() == 'unknown') {
+      // .output joins whatever text came back without us unwrapping Parts
+      final raw = (response?.output ?? '').trim();
+      if (raw.isEmpty || raw.toLowerCase().startsWith('unknown')) {
         return [];
+      }
+
+      // keep only the first line and drop any stray formatting characters
+      final line = raw.split('\n').first.replaceAll('`', '').trim();
+      final parts = line.split('|');
+
+      final name = parts[0].trim();
+      if (name.isEmpty || name.toLowerCase() == 'unknown') return [];
+
+      // pull the first number out of the second part, if there is one
+      int? days;
+      if (parts.length > 1) {
+        final match = RegExp(r'\d+').firstMatch(parts[1]);
+        days = int.tryParse(match?.group(0) ?? '');
       }
 
       return [
         RecognizedItem(
-          suggestedName: text,
-          confidenceScore: 1.0, // Gemini doesn't give a numeric score
+          suggestedName: name,
+          confidenceScore: 1.0, // Gemini does not give a numeric score
           suggestedQuantity: 1,
+          estimatedShelfLifeDays: days,
         ),
       ];
     } catch (e) {
-      // it the same as "couldn't identify anything" rather than crash
+      // treat any failure as "could not identify anything"
       return [];
     }
   }
@@ -117,12 +133,24 @@ class RecognizedItem {
   final String suggestedName;
   final double confidenceScore;
   final int suggestedQuantity;
+  final int? estimatedShelfLifeDays; // null if the AI gave no estimate
 
   RecognizedItem({
     required this.suggestedName,
     required this.confidenceScore,
     required this.suggestedQuantity,
+    this.estimatedShelfLifeDays,
   });
+
+  // Today plus the estimated shelf life, or null if there is no estimate.
+  // The days are capped between 1 day and 2 years to guard against odd answers.
+  DateTime? get estimatedExpiryDate {
+    final days = estimatedShelfLifeDays;
+    if (days == null) return null;
+    final safeDays = days.clamp(1, 730);
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day).add(Duration(days: safeDays));
+  }
 
   InventoryItem convertToInventoryItem({
     String? userId,
@@ -137,7 +165,7 @@ class RecognizedItem {
       itemQuantity: suggestedQuantity.toDouble(),
       priceUnknown: price == null,
       price: price ?? 0.0,
-      expiryDate: expiryDate ?? DateTime.now(),
+      expiryDate: expiryDate ?? estimatedExpiryDate ?? DateTime.now(),
       storageZone: storageZone,
     );
   }
