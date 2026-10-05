@@ -10,10 +10,6 @@ plugins {
 android {
     compileSdk = 37
     namespace = "com.example.my_pantry"
-<<<<<<< HEAD
-    compileSdk = 37
-=======
->>>>>>> origin/main
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
