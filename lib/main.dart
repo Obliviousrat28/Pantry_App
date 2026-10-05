@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'firebase_options.dart';
 import 'api_keys.dart';
+import 'services/notification_service.dart';
 import 'screens/main_navigation_screen.dart'; 
 import 'screens/login_screen.dart';
 
@@ -13,6 +14,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   Gemini.init(apiKey: geminiApiKey);
+  await NotificationService.instance.init();
   runApp(const MyApp());
 }
 
