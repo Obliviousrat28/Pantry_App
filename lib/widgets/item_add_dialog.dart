@@ -4,12 +4,14 @@ import '../models/meal_log.dart';
 import 'add_item_form.dart';
 import 'log_meal_form.dart';
 
+/// A dialog that allows users to either add a new inventory item or log a meal.
 class ItemAddDialog extends StatefulWidget {
   final Function(InventoryItem) onAddItem;
   final Function(MealLog)? onLogMeal;
   final InventoryItem? initialData;
   final String? initialName;
 
+  /// Creates an instance of ItemAddDialog.
   const ItemAddDialog({
     super.key,
     required this.onAddItem,
@@ -18,15 +20,18 @@ class ItemAddDialog extends StatefulWidget {
     this.initialName,
   });
 
+  /// Creates an instance of ItemAddDialog.
   @override
   State<ItemAddDialog> createState() => _ItemAddDialogState();
 }
 
+/// The state class for ItemAddDialog, managing the selected tab and form submissions.
 class _ItemAddDialogState extends State<ItemAddDialog> {
   int _selectedTabIndex = 0;
   final GlobalKey<AddItemFormState> _addItemKey = GlobalKey<AddItemFormState>();
   final GlobalKey<LogMealFormState> _logMealKey = GlobalKey<LogMealFormState>();
 
+  /// Builds the widget tree for the dialog, including tab selection and form display.
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -44,6 +49,7 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
               child: Row(
                 children: [
                   Expanded(
+                    // GestureDetector for the "Add Item" tab
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedTabIndex = 0),
                       child: Container(
