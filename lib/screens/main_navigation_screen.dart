@@ -95,6 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    await _storageService.addHistoryItem(item);
   }
 
   // Scenario 2: Logging a Meal Directly
@@ -215,7 +216,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
       ),
       RecipesScreen(),
-      const HistoryScreen(),
+      HistoryScreen(
+        onAddItem: _handleAddItem,
+      ),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,

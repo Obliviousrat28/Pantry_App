@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
+import '../models/history_entry.dart';
 
 class StorageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -127,5 +128,30 @@ class StorageService {
       {'weeklyBudgetGoal': goal},
       SetOptions(merge: true),
     );
+  }
+
+  // ================= HISTORY =================
+
+  Future<void> addHistoryItem(InventoryItem item) async
+  {
+    HistoryEntry entry = HistoryEntry(
+      itemName: item.itemName,
+      itemQuantity: item.itemQuantity,
+      price: item.price,
+      priceUnknown: item.priceUnknown,
+      storageZone: item.storageZone,
+      dateAdded: DateTime.now(),
+    );
+    await _userDoc.collection('history').add(entry.toFirestore());
+  }
+
+  Future<List<HistoryEntry>> loadHistory() async
+  {
+    final snapshot = await _userDoc
+        .collection('history')
+        .orderBy('dateAdded', descending: true)
+        .limit(50)
+        .get();
+    return snapshot.docs.map((doc) => HistoryEntry.fromFirestore(doc)).toList();
   }
 }
