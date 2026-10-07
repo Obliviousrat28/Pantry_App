@@ -1,20 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_gemini/flutter_gemini.dart';
+import 'firebase_options.dart';
+import 'api_keys.dart';
+import 'services/notification_service.dart';
+import 'screens/main_navigation_screen.dart'; 
+import 'screens/login_screen.dart';
 
-import 'screens/budget_screen.dart';
-//new code
-void main() {
-  runApp(const MyPantryPrototype());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  Gemini.init(apiKey: geminiApiKey);
+  await NotificationService.instance.init();
+  runApp(const MyApp());
 }
 
-class MyPantryPrototype extends StatelessWidget {
-  const MyPantryPrototype({super.key});
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Pantry - Budget Prototype',
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-      home: const BudgetScreen(),
+      theme: ThemeData(useMaterial3: true),
+      home: const AuthGate(),
     );
   }
-}//random comment
+}
+
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const LoginScreen(
+          );
+        }
+        return const MainNavigationScreen();
+      },
+    );
+  }
+}
