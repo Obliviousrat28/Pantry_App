@@ -8,6 +8,7 @@ class HistoryEntry
   final double price;
   final bool priceUnknown;
   final StorageZone storageZone;
+  final DateTime expiryDate;
   final DateTime dateAdded;
 
   HistoryEntry({
@@ -16,6 +17,7 @@ class HistoryEntry
     required this.price,
     required this.priceUnknown,
     required this.storageZone,
+    required this.expiryDate,
     required this.dateAdded,
   });
 
@@ -27,6 +29,7 @@ class HistoryEntry
       'price': price,
       'priceUnknown': priceUnknown,
       'storageZone': storageZone.name,
+      'expiryDate': Timestamp.fromDate(expiryDate),
       'dateAdded': Timestamp.fromDate(dateAdded),
     };
   }
@@ -43,6 +46,7 @@ class HistoryEntry
         (zone) => zone.name == data['storageZone'],
         orElse: () => StorageZone.pantry,
       ),
+      expiryDate: (data['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       dateAdded: (data['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }

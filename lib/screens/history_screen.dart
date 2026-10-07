@@ -71,25 +71,58 @@ class _HistoryScreenState extends State<HistoryScreen>
     {
       return 'Price unknown';
     }
-    return '\$${entry.price.toStringAsFixed(2)}';
+    return '\$${entry.price.toStringAsFixed(2)} each';
   }
 
-  Future<void> _reAddItem(HistoryEntry entry) async
+  String _totalText(HistoryEntry entry)
   {
-    DateTime now = DateTime.now();
-    DateTime? expiry = await showDatePicker(
+    if (entry.priceUnknown)
+    {
+      return 'Total unknown';
+    }
+    double total = entry.price * entry.itemQuantity;
+    return 'Total \$${total.toStringAsFixed(2)}';
+  }
+
+  Future<void> _confirmReAdd(HistoryEntry entry) async
+  {
+    bool? confirmed = await showDialog<bool>(
       context: context,
-      helpText: 'Expiry date for ${entry.itemName}',
-      initialDate: now.add(const Duration(days: 7)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365 * 5)),
+      builder: (dialogContext)
+      {
+        return AlertDialog(
+          title: Text('Add ${entry.itemName} back to your inventory?'),
+          content: Text(
+            'Quantity: ${entry.itemQuantity.toInt()}\n'
+            'Price: ${_priceText(entry)}\n'
+            '${_totalText(entry)}\n'
+            'Storage: ${_zoneName(entry)}\n'
+            'Expires: ${_formatDate(entry.expiryDate)}',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
 
-    if (expiry == null || !mounted)
+    if (confirmed != true || !mounted)
     {
       return;
     }
 
+    _reAddItem(entry);
+  }
+
+  void _reAddItem(HistoryEntry entry)
+  {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
 
     InventoryItem item = InventoryItem(
@@ -99,26 +132,30 @@ class _HistoryScreenState extends State<HistoryScreen>
       itemQuantity: entry.itemQuantity,
       price: entry.price,
       priceUnknown: entry.priceUnknown,
-      expiryDate: expiry,
+      expiryDate: entry.expiryDate,
       storageZone: entry.storageZone,
     );
 
     widget.onAddItem(item);
 
+    HistoryEntry updated = HistoryEntry(
+      itemName: entry.itemName,
+      itemQuantity: entry.itemQuantity,
+      price: entry.price,
+      priceUnknown: entry.priceUnknown,
+      storageZone: entry.storageZone,
+      expiryDate: entry.expiryDate,
+      dateAdded: DateTime.now(),
+    );
+
     setState(()
     {
-      _history.insert(0, HistoryEntry(
-        itemName: entry.itemName,
-        itemQuantity: entry.itemQuantity,
-        price: entry.price,
-        priceUnknown: entry.priceUnknown,
-        storageZone: entry.storageZone,
-        dateAdded: DateTime.now(),
-      ));
+      _history.remove(entry);
+      _history.insert(0, updated);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${entry.itemName} added to your inventory')),
+      SnackBar(content: Text('${entry.itemName} added back to your inventory')),
     );
   }
 
@@ -144,7 +181,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         child: Padding(
           padding: EdgeInsets.all(24.0),
           child: Text(
-            'No items in your history yet.\nItems you add will appear here.',
+            'No items in your history yet.\nItems you add to your inventory will appear here.',
             textAlign: TextAlign.center,
           ),
         ),
@@ -152,24 +189,36 @@ class _HistoryScreenState extends State<HistoryScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+      padding: const EdgeInsets.all(16.0),
       itemCount: _history.length,
       itemBuilder: (context, index)
       {
         HistoryEntry entry = _history[index];
         return Card(
-          child: ListTile(
-            title: Text(
-              entry.itemName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.itemName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('Qty: ${entry.itemQuantity.toInt()}  •  ${_priceText(entry)}  •  ${_totalText(entry)}'),
+                      Text('${_zoneName(entry)}  •  Expires: ${_formatDate(entry.expiryDate)}'),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _confirmReAdd(entry),
+                  child: const Text('Re-add'),
+                ),
+              ],
             ),
-            subtitle: Text(
-              'Qty: ${entry.itemQuantity.toInt()}  •  ${_priceText(entry)}  •  ${_zoneName(entry)}\n'
-              'Added: ${_formatDate(entry.dateAdded)}',
-            ),
-            isThreeLine: true,
-            trailing: const Icon(Icons.add_circle_outline),
-            onTap: () => _reAddItem(entry),
           ),
         );
       },

@@ -140,9 +140,11 @@ class StorageService {
       price: item.price,
       priceUnknown: item.priceUnknown,
       storageZone: item.storageZone,
+      expiryDate: item.expiryDate,
       dateAdded: DateTime.now(),
     );
-    await _userDoc.collection('history').add(entry.toFirestore());
+    String historyId = item.itemName.trim().toLowerCase().replaceAll('/', '-');
+    await _userDoc.collection('history').doc(historyId).set(entry.toFirestore());
   }
 
   Future<List<HistoryEntry>> loadHistory() async
@@ -152,6 +154,19 @@ class StorageService {
         .orderBy('dateAdded', descending: true)
         .limit(50)
         .get();
-    return snapshot.docs.map((doc) => HistoryEntry.fromFirestore(doc)).toList();
+
+    List<HistoryEntry> entries = [];
+    List<String> seenNames = [];
+    for (var doc in snapshot.docs)
+    {
+      HistoryEntry entry = HistoryEntry.fromFirestore(doc);
+      String name = entry.itemName.trim().toLowerCase();
+      if (!seenNames.contains(name))
+      {
+        seenNames.add(name);
+        entries.add(entry);
+      }
+    }
+    return entries;
   }
 }

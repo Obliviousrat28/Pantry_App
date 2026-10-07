@@ -229,10 +229,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return Scaffold(
       body: screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddModal,
-        child: const Icon(Icons.add),
-      ),
+            floatingActionButton: _currentIndex == 3
+          ? null
+          : FloatingActionButton(
+              onPressed: _openAddModal,
+              child: const Icon(Icons.add),
+            ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
