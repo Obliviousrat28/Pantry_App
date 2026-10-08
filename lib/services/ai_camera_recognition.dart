@@ -82,42 +82,49 @@ class GeminiVisionClient implements AIApiClient {
       // ignore: deprecated_member_use
       final response = await Gemini.instance.textAndImage(
         text:
-            'Identify the single food or grocery item in this photo. '
-            'Reply with ONLY this format on one line: ItemName|ShelfLifeDays '
+            'Identify the single type of food or grocery item in this photo. '
+            'Reply with ONLY this format on one line: '
+            'ItemName|ShelfLifeDays|Quantity '
             'ItemName is in Title Case. ShelfLifeDays is a whole number, your '
             'best estimate of how many days this item normally stays good from '
-            'today when stored properly (e.g. 7 for an apple, 5 for fresh '
-            'milk, 180 for canned food). '
-            'Examples: Apple|7 or Mountain Dew|180 or Green Valley Milk|5. '
+            'today when stored properly. '
+            'Quantity is a whole number. Count the individual units of the '
+            'item that you can actually see in the photo (e.g. 5 for five '
+            'apples, 11 for a tray that has 11 eggs in it, ignoring empty '
+            'slots). If the pack is closed and you cannot see the individual '
+            'units, use the number printed on the packaging instead '
+            '(e.g. 6 for a sealed 6 pack). If you can do neither, use 1. '
+            'Examples: Apple|7|5 or Mountain Dew|180|1 or Eggs|28|11. '
             'If you cannot tell what it is, reply with exactly "Unknown".',
         images: [imageBytes],
       );
 
-      // .output joins whatever text came back without us unwrapping Parts
       final raw = (response?.output ?? '').trim();
       if (raw.isEmpty || raw.toLowerCase().startsWith('unknown')) {
         return [];
       }
 
-      // keep only the first line and drop any stray formatting characters
       final line = raw.split('\n').first.replaceAll('`', '').trim();
       final parts = line.split('|');
 
       final name = parts[0].trim();
       if (name.isEmpty || name.toLowerCase() == 'unknown') return [];
 
-      // pull the first number out of the second part, if there is one
-      int? days;
-      if (parts.length > 1) {
-        final match = RegExp(r'\d+').firstMatch(parts[1]);
-        days = int.tryParse(match?.group(0) ?? '');
+      // reads the first number found in the given part of the reply
+      int? readNumber(int index) {
+        if (parts.length <= index) return null;
+        final match = RegExp(r'\d+').firstMatch(parts[index]);
+        return int.tryParse(match?.group(0) ?? '');
       }
+
+      final days = readNumber(1);
+      final qty = (readNumber(2) ?? 1).clamp(1, 999);
 
       return [
         RecognizedItem(
           suggestedName: name,
           confidenceScore: 1.0, // Gemini does not give a numeric score
-          suggestedQuantity: 1,
+          suggestedQuantity: qty,
           estimatedShelfLifeDays: days,
         ),
       ];

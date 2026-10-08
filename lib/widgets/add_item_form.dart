@@ -92,6 +92,7 @@ class AddItemFormState extends State<AddItemForm> {
       if (recognizedItems.isNotEmpty) {
         final best = recognizedItems.first;
         nameController.text = best.suggestedName;
+        qtyController.text = best.suggestedQuantity.toString();
         // pre-fill the expiry with Gemini's shelf life estimate, if it gave one
         if (best.estimatedExpiryDate != null) {
           selectedDate = best.estimatedExpiryDate;
@@ -106,7 +107,7 @@ class AddItemFormState extends State<AddItemForm> {
         mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Expiry date is an estimate, please check it'),
+          content: Text('Expiry date and quantity are estimates, please check them'),
         ),
       );
     }
