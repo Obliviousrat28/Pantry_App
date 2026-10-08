@@ -5,6 +5,7 @@ import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
+import 'package:flutter/foundation.dart';
 
 //***** AI CAMERA FEATURE - START *****
 // StorageZone is defined further down under Add Item, but is used
@@ -100,6 +101,8 @@ class GeminiVisionClient implements AIApiClient {
       );
 
       final raw = (response?.output ?? '').trim();
+      debugPrint('Gemini raw reply: "$raw"');
+
       if (raw.isEmpty || raw.toLowerCase().startsWith('unknown')) {
         return [];
       }
@@ -129,7 +132,7 @@ class GeminiVisionClient implements AIApiClient {
         ),
       ];
     } catch (e) {
-      // treat any failure as "could not identify anything"
+      debugPrint('Gemini error: $e');
       return [];
     }
   }

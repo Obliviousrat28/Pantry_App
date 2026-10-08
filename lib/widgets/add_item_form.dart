@@ -64,7 +64,7 @@ class AddItemFormState extends State<AddItemForm> {
     super.dispose();
   }
 
-    Future<void> _scanBarcode() async {
+      Future<void> _scanBarcode() async {
     final photo = await _barcodeService.capturePhoto(context);
     if (photo == null || !mounted) return;
 
@@ -74,14 +74,19 @@ class AddItemFormState extends State<AddItemForm> {
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    // still read the barcode digits if there are any, kept as metadata
-    final code = await _barcodeService.scanBarcodeFromFile(photo);
+    String? code;
+    List<RecognizedItem> recognizedItems = [];
+    try {
+      // still read the barcode digits if there are any, kept as metadata
+      code = await _barcodeService.scanBarcodeFromFile(photo);
 
-    // Gemini reads the actual photo, the packaging, the label, or the
-    // fruit itself, and names the product directly, whether or not the
-    // photo has a barcode in it
-    final cameraRecognition = CameraRecognition(aiClient: GeminiVisionClient());
-    final recognizedItems = await cameraRecognition.recognizeItems(photo);
+      // Gemini reads the actual photo and names the product directly
+      final cameraRecognition =
+          CameraRecognition(aiClient: GeminiVisionClient());
+      recognizedItems = await cameraRecognition.recognizeItems(photo);
+    } catch (e) {
+      debugPrint('Scan failed: $e');
+    }
     if (!mounted) return;
     Navigator.of(context).pop(); // close the spinner
 
