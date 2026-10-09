@@ -3,6 +3,7 @@ import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 import '../widgets/item_add_dialog.dart';
 import '../widgets/item_card.dart';
+import 'shopping_list_screen.dart'; // Make sure to import your new screen
 
 // A screen that displays the inventory items grouped by their storage zones.
 class InventoryScreen extends StatefulWidget {
@@ -18,8 +19,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   // Opens a dialog to add a new inventory item.
   void _openAddItemDialog() {
-    showDialog(
-      context: context,
+    showDialog( 
+      context: context, 
       builder: (ctx) => ItemAddDialog(
         onAddItem: (newItem) {
           setState(() {
@@ -60,7 +61,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
     // Group items by storage zone
     return Scaffold(
-      appBar: AppBar(title: const Text('Inventory')),
+      appBar: AppBar(
+        title: const Text('Inventory'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shopping_cart),
+            tooltip: 'Shopping List',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => const ShoppingListScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         children: StorageZone.values.map((zone) {
@@ -111,4 +127,4 @@ class _InventoryScreenState extends State<InventoryScreen> {
       ),
     );
   }
-}
+} 
