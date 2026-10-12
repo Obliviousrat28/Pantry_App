@@ -73,8 +73,6 @@ class _SignupScreenState extends State<SignupScreen>
 
       print('User registered: ${newUser.userName}');
       print('User ID: ${newUser.userId}');
-      print ('Email: ${newUser.userEmail}');
-      print ('Password: ${newUser.userPassword}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Account created successfully!')),
