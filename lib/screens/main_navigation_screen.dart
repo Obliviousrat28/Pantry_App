@@ -10,6 +10,7 @@ import 'budget_screen.dart';
 import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
+import 'history_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -94,6 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    await _storageService.addHistoryItem(item);
   }
 
   // Scenario 2: Logging a Meal Directly
@@ -214,6 +216,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
       ),
       RecipesScreen(),
+      HistoryScreen(
+        onAddItem: _handleAddItem,
+      ),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
@@ -224,10 +229,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return Scaffold(
       body: screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddModal,
-        child: const Icon(Icons.add),
-      ),
+            floatingActionButton: _currentIndex == 3
+          ? null
+          : FloatingActionButton(
+              onPressed: _openAddModal,
+              child: const Icon(Icons.add),
+            ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
