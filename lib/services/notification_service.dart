@@ -23,7 +23,8 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     ),
-  );
+    iOS: DarwinNotificationDetails(), //added for iOS support
+    );
 
   Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -33,6 +34,7 @@ class NotificationService {
     await _plugin.initialize(
       settings: const InitializationSettings(
         android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(),//iOS initialization settings added for iOS support
       ),
     );
 
@@ -40,7 +42,7 @@ class NotificationService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.requestNotificationsPermission();
-  }
+    }
 
   // Stable positive int id from the item's String id.
   int _notifId(String itemId) => itemId.hashCode & 0x7FFFFFFF;
@@ -69,8 +71,8 @@ class NotificationService {
   final expiryDay = tz.TZDateTime(
       tz.local, expiryDate.year, expiryDate.month, expiryDate.day);
   final remindAt = expiryDay
-      .subtract(const Duration(days: daysBefore))
-      .add(const Duration(hours: reminderHour));
+ .subtract(const Duration(days: daysBefore))
+ .add(const Duration(hours: reminderHour));
 
   // Whole days from today to expiry (negative means already expired).
   final daysLeft = (expiryDay.difference(today).inHours / 24).round();
@@ -87,6 +89,7 @@ class NotificationService {
     );
     return;
   }
+
 
   // Already inside the window, or already expired: alert now, once per day.
   if (await _alreadyAlertedToday(itemId)) return;
