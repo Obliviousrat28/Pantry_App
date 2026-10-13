@@ -56,28 +56,24 @@ class _InventoryScreenState extends State<InventoryScreen> {
   // Builds the widget tree for the InventoryScreen, displaying inventory items grouped by storage zones.
   @override
   Widget build(BuildContext context) {
-    // Sort items by expiry date (earliest first)
-    _items.sort((a, b) => a.expiryDate.compareTo(b.expiryDate));
-
-    // Group items by storage zone
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Inventory'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.shopping_cart),
-            tooltip: 'Shopping List',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (ctx) => const ShoppingListScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-      body: ListView(
+    appBar: AppBar(
+      title: const Text('Inventory'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.shopping_cart),
+          tooltip: 'Shopping List',
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (ctx) => const ShoppingListScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+    body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         children: StorageZone.values.map((zone) {
           // Filter items for the specific storage zone
