@@ -3,6 +3,7 @@ import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
 import 'add_item_form.dart';
 import 'log_meal_form.dart';
+import '../services/open_food_facts_lookup.dart';
 
 /// A dialog that allows users to either add a new inventory item or log a meal.
 class ItemAddDialog extends StatefulWidget {
@@ -105,6 +106,7 @@ class _ItemAddDialogState extends State<ItemAddDialog> {
                 onAddItem: widget.onAddItem,
                 initialData: widget.initialData,
                 initialName: widget.initialName,
+                itemLookup: OpenFoodFactsLookup(),
               )
             else
               LogMealForm(

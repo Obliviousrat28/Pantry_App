@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 import '../services/barcode_scanner.dart';
+import '../services/item_lookup_service.dart';
 
 /// A form widget for adding or editing an inventory item, including fields for name, quantity, price, expiry date, and storage zone.
 class AddItemForm extends StatefulWidget {
@@ -9,12 +10,17 @@ class AddItemForm extends StatefulWidget {
   final InventoryItem? initialData;
   final String? initialName;
 
+  final BarcodeScanSource? barcodeService;
+  final ItemLookupService? itemLookup;
+
   /// Creates an instance of AddItemForm with the specified callback for adding an item, optional initial data, and optional initial name.
   const AddItemForm({
     super.key,
     required this.onAddItem,
     this.initialData,
     this.initialName,
+    this.barcodeService,
+    this.itemLookup,
   });
 
   /// Creates an instance of AddItemForm with the specified callback for adding an item, optional initial data, and optional initial name.
@@ -35,12 +41,13 @@ class AddItemFormState extends State<AddItemForm> {
   bool isPriceUnknown = false;
   String? _scannedBarcode;
 
-  final BarcodeScannerService _barcodeService = BarcodeScannerService();
+  late final BarcodeScanSource _barcodeService;
 
   // Initializes the state of the AddItemForm, setting up text controllers with initial values if provided, and initializing other state variables.
   @override
   void initState() {
     super.initState();
+    _barcodeService = widget.barcodeService ?? BarcodeScannerService();
     nameController = TextEditingController(
       text: widget.initialData?.itemName ?? widget.initialName ?? '',
     ); // Initialize nameController with initialData's itemName or initialName if provided, otherwise empty string
@@ -74,10 +81,12 @@ class AddItemFormState extends State<AddItemForm> {
   Future<void> _scanBarcode() async {
     final code = await _barcodeService.scanBarcode(context);
     if (code == null || !mounted) return;
+    final productName = await widget.itemLookup?.getItemName(code);
+    if (!mounted) return;
     setState(() {
       _scannedBarcode = code;
       if (nameController.text.isEmpty) {
-        nameController.text = code;
+        nameController.text = productName ?? code;
       }
     });
   }
