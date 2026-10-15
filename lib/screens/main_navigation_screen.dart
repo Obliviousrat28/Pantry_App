@@ -95,7 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
-    await _storageService.addHistoryItem(item);
+    await _storageService.addHistoryItem(item, 'added');
   }
 
   // Scenario 2: Logging a Meal Directly
@@ -155,6 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Call the dedicated deletion method using the item's unique ID
     await _storageService.deleteItem(item.itemId);
+    await _storageService.addHistoryItem(item, 'removed');
   }
 
   void _openAddModal() {
@@ -229,7 +230,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return Scaffold(
       body: screens[_currentIndex],
-            floatingActionButton: _currentIndex == 3
+      floatingActionButton: _currentIndex == 3
           ? null
           : FloatingActionButton(
               onPressed: _openAddModal,

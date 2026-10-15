@@ -59,6 +59,24 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '$day/$month/${date.year}';
   }
 
+  String _formatDateTime(DateTime date)
+  {
+    int hour = date.hour % 12;
+    if (hour == 0)
+    {
+      hour = 12;
+    }
+
+    String period = 'AM';
+    if (date.hour >= 12)
+    {
+      period = 'PM';
+    }
+
+    String minute = date.minute.toString().padLeft(2, '0');
+    return '${_formatDate(date)} at $hour:$minute $period';
+  }
+
   String _zoneName(HistoryEntry entry)
   {
     String name = entry.storageZone.name;
@@ -138,20 +156,20 @@ class _HistoryScreenState extends State<HistoryScreen>
 
     widget.onAddItem(item);
 
-    HistoryEntry updated = HistoryEntry(
+    HistoryEntry newEntry = HistoryEntry(
       itemName: entry.itemName,
       itemQuantity: entry.itemQuantity,
       price: entry.price,
       priceUnknown: entry.priceUnknown,
       storageZone: entry.storageZone,
       expiryDate: entry.expiryDate,
+      action: 'added',
       dateAdded: DateTime.now(),
     );
 
     setState(()
     {
-      _history.remove(entry);
-      _history.insert(0, updated);
+      _history.insert(0, newEntry);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -194,6 +212,16 @@ class _HistoryScreenState extends State<HistoryScreen>
       itemBuilder: (context, index)
       {
         HistoryEntry entry = _history[index];
+        bool wasRemoved = entry.action == 'removed';
+
+        String actionText = 'Added';
+        Color actionColour = Colors.green;
+        if (wasRemoved)
+        {
+          actionText = 'Removed';
+          actionColour = Colors.red;
+        }
+
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -203,13 +231,27 @@ class _HistoryScreenState extends State<HistoryScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        entry.itemName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      Row(
+                        children: [
+                          Text(
+                            entry.itemName,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            actionText,
+                            style: TextStyle(color: actionColour, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Text('Qty: ${entry.itemQuantity.toInt()}  •  ${_priceText(entry)}  •  ${_totalText(entry)}'),
                       Text('${_zoneName(entry)}  •  Expires: ${_formatDate(entry.expiryDate)}'),
+                      const SizedBox(height: 4),
+                      Text(
+                        '$actionText on ${_formatDateTime(entry.dateAdded)}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                     ],
                   ),
                 ),
