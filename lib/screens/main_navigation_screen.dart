@@ -10,6 +10,7 @@ import 'budget_screen.dart';
 import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
+import 'shopping_list_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -201,6 +202,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       );
     }
 
+    // Define screen titles for the top app bar
+    final List<String> titles = [
+      'Inventory',
+      'Budget',
+      'Recipes',
+      'Settings',
+    ];
+
     final List<Widget> screens = [
       ZoneScreen(
         title: 'Inventory',
@@ -213,16 +222,34 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
       ),
-      RecipesScreen(),
+      const RecipesScreen(),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
         onUpdateBudgetGoal: _updateBudgetGoal,
         onUpdateDietaryPreferences: _updateDietaryPreferences,
-    ),
+      ),
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(titles[_currentIndex]),
+        actions: [
+          // Show shopping cart icon only when viewing the Inventory tab
+          if (_currentIndex == 0)
+            IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              tooltip: 'Shopping List',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (ctx) => const ShoppingListScreen(),
+                  ),
+                );
+              },
+            ),
+        ],
+      ),
       body: screens[_currentIndex],
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddModal,
