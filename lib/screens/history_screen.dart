@@ -181,7 +181,6 @@ class _HistoryScreenState extends State<HistoryScreen>
   Widget build(BuildContext context)
   {
     return Scaffold(
-      appBar: AppBar(title: const Text('History')),
       body: _buildBody(),
     );
   }
