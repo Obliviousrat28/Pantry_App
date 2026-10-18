@@ -86,6 +86,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           mealName: '${item.itemName} (x${item.itemQuantity.toInt()})',
           mealPrice: totalCost.toStringAsFixed(2),
           mealDate: DateTime.now(),
+          //default to 'grocery' for items added to inventory.
+          source: 'grocery',
         ),
       );
       
@@ -110,12 +112,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
+  // Updates an existing inventory item and keeps the budget and the
+  // matching spending entry in sync with the new price and quantity.
   void _editItem(InventoryItem updatedItem) async {
+    // Find the item being edited; stop if it no longer exists.
     final index = inventoryItems.indexWhere((e) => e.itemId == updatedItem.itemId);
     if (index == -1) return;
 
     final oldItem = inventoryItems[index];
 
+    // Work out how much the total cost changed (unknown prices count as 0).
     final double oldUnitCost = oldItem.priceUnknown ? 0.0 : oldItem.price;
     final double oldTotalCost = oldUnitCost * oldItem.itemQuantity;
 
@@ -125,23 +131,30 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final double costDifference = newTotalCost - oldTotalCost;
 
     setState(() {
+      // Replace the item and adjust the remaining budget by the difference.
       inventoryItems[index] = updatedItem;
       remainingBudget -= costDifference;
 
+      // Find the spending entry created when this item was added, using
+      // its old display name, e.g. "Milk (x2)".
       final oldFormattedName = '${oldItem.itemName} (x${oldItem.itemQuantity.toInt()})';
       final logIndex = mealLogs.indexWhere(
         (log) => log.mealName == oldFormattedName,
       );
 
+      // Rebuild that entry with the new name and price. The original date
+      // and source are kept, so an edited grocery item stays a grocery.
       if (logIndex != -1) {
         mealLogs[logIndex] = MealLog(
           mealName: '${updatedItem.itemName} (x${updatedItem.itemQuantity.toInt()})',
           mealPrice: newTotalCost.toStringAsFixed(2),
           mealDate: mealLogs[logIndex].mealDate,
+          source: mealLogs[logIndex].source,
         );
       }
     });
 
+    // Save the updated item, spending entries, and budget.
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
