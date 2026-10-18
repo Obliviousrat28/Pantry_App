@@ -101,8 +101,7 @@ class StorageService {
   Future<void> saveMealLogs(List<MealLog> logs) async {
     final batch = _firestore.batch();
     for (final log in logs) {
-      final docId = log.mealDate.millisecondsSinceEpoch.toString();
-      final docRef = _userDoc.collection('meal_logs').doc(docId);
+      final docRef = _userDoc.collection('meal_logs').doc(log.id);//Using log.id as the document ID to ensure uniqueness
       batch.set(docRef, log.toFirestore(), SetOptions(merge: true));
     }
     await batch.commit();

@@ -85,7 +85,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         MealLog(
           mealName: '${item.itemName} (x${item.itemQuantity.toInt()})',
           mealPrice: totalCost.toStringAsFixed(2),
-          mealDate: DateTime.now(),
+          //chosen purchase date, defaults to now
+          mealDate: item.entryDate,
           //default to 'grocery' for items added to inventory.
           source: 'grocery',
         ),
@@ -146,6 +147,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // and source are kept, so an edited grocery item stays a grocery.
       if (logIndex != -1) {
         mealLogs[logIndex] = MealLog(
+          id: mealLogs[logIndex].id,// Preserve the original ID for Firestore
           mealName: '${updatedItem.itemName} (x${updatedItem.itemQuantity.toInt()})',
           mealPrice: newTotalCost.toStringAsFixed(2),
           mealDate: mealLogs[logIndex].mealDate,

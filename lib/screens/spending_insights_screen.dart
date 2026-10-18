@@ -5,7 +5,7 @@ import '../widgets/weekly_spending_line_chart.dart';
 
 // TEMPORARY: while true, the charts use sample data. Set to false
 // (and delete the sample function) before submitting.
-const bool useSampleData = true;
+const bool useSampleData = false;
 
 // Full-page view of the user's spending charts for the current week.
 // Opened from the Budget tab. Each chart has its own tab.
