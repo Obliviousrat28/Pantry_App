@@ -66,6 +66,27 @@ class StorageService {
     await _userDoc.collection('inventory').doc(itemId).delete();
   }
 
+  // ================= SHOPPING LIST =================
+
+  // Loads the shopping list items for the current user from Firestore.
+  Future<List<InventoryItem>> loadShoppingItems() async {
+    final snapshot = await _userDoc.collection('shopping_list').get();
+    return snapshot.docs
+        .map((doc) => InventoryItem.fromFirestore(doc))
+        .toList();
+  }
+
+  // Saves or updates a single shopping list item in Firestore.
+  Future<void> saveShoppingItem(InventoryItem item) async {
+    final docRef = _userDoc.collection('shopping_list').doc(item.itemId);
+    await docRef.set(item.toFirestore(), SetOptions(merge: true));
+  }
+
+  // Deletes a shopping list item from Firestore based on its itemId.
+  Future<void> deleteShoppingItem(String itemId) async {
+    await _userDoc.collection('shopping_list').doc(itemId).delete();
+  }
+
   // ================= MEAL LOGS =================
 
   // Loads the meal logs for the current user from Firestore, returning a list of MealLog objects ordered by mealDate in descending order.
