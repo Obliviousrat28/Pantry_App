@@ -214,6 +214,17 @@ class SavedRecipeCard extends StatelessWidget {
       );
     }
 
+    //Shows the saved estimated recipe cost
+    if (recipe.estimatedCost > 0) {
+      infoItems.add(
+        _RecipeInfo(
+          icon: Icons.payments_outlined,
+          text:
+              '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
+        ),
+      );
+    }
+
     return Card(
       margin:
           const EdgeInsets.only(bottom: 15),

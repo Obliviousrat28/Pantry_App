@@ -10,6 +10,9 @@ class Recipe {
   final String sourceName;
   final String sourceUrl;
   final String imageUrl;
+  final double estimatedCost;
+  final double estimatedPurchaseCost;
+  final double overBudgetAmount;
 
   Recipe({
     required this.title,
@@ -23,6 +26,9 @@ class Recipe {
     this.sourceName = 'AI Generated',
     this.sourceUrl = '',
     this.imageUrl = '',
+    this.estimatedCost = 0.0,
+    this.estimatedPurchaseCost = 0.0,
+    this.overBudgetAmount = 0.0,
   });
 
   //Returns true when the recipe comes from a real recipe database
@@ -48,6 +54,12 @@ class Recipe {
           (sourceType == 'real' ? 'Real Recipe' : 'AI Generated'),
       sourceUrl: json['sourceUrl']?.toString() ?? '',
       imageUrl: json['imageUrl']?.toString() ?? '',
+      estimatedCost:
+          (json['estimatedCost'] as num?)?.toDouble() ?? 0.0,
+      estimatedPurchaseCost:
+          (json['estimatedPurchaseCost'] as num?)?.toDouble() ?? 0.0,
+      overBudgetAmount:
+          (json['overBudgetAmount'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -65,6 +77,9 @@ class Recipe {
       'sourceName': sourceName,
       'sourceUrl': sourceUrl,
       'imageUrl': imageUrl,
+      'estimatedCost': estimatedCost,
+      'estimatedPurchaseCost': estimatedPurchaseCost,
+      'overBudgetAmount': overBudgetAmount,
     };
   }
 }
