@@ -126,8 +126,9 @@ class _RecipeDetailsScreenState
       infoItems.add(
         _InfoItem(
           icon: Icons.payments_outlined,
-          text:
-              '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
+          text: recipe.hasUnknownPrices
+              ? 'Known ~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}'
+              : '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
         ),
       );
     }
@@ -227,12 +228,13 @@ class _RecipeDetailsScreenState
               ),
             ],
 
-            if (recipe.estimatedCost > 0) ...[
+            if (recipe.hasIngredientCostBreakdown) ...[
+              const SizedBox(height: 18),
+              _RecipeCostSummary(recipe: recipe),
+            ] else if (recipe.estimatedCost > 0) ...[
               const SizedBox(height: 12),
-
-              //Explains how recipe prices are estimated
               Text(
-                'Cost uses your inventory prices where available. Missing ingredient prices are estimated from typical New Zealand prices.',
+                'Costs are estimates based on inventory and typical New Zealand prices.',
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontStyle: FontStyle.italic,
@@ -302,35 +304,17 @@ class _RecipeDetailsScreenState
 
             const SizedBox(height: 12),
 
-            //Displays every ingredient
-            ...recipe.ingredients.map(
-              (ingredient) => Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 10,
-                ),
-                child: Row(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.circle,
-                      size: 8,
-                    ),
-
-                    const SizedBox(width: 10),
-
-                    Expanded(
-                      child: Text(
-                        ingredient,
-                        style: const TextStyle(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            //Shows whether each ingredient is available and its price.
+            ...List.generate(recipe.ingredients.length, (index) {
+              final ingredient = recipe.ingredients[index];
+              final cost = index < recipe.ingredientCosts.length
+                  ? recipe.ingredientCosts[index]
+                  : null;
+              return _IngredientPriceTile(
+                ingredient: ingredient,
+                cost: cost,
+              );
+            }),
 
             const SizedBox(height: 30),
 
@@ -408,6 +392,135 @@ class _RecipeDetailsScreenState
   }
 }
 
+
+//Summary values come from the server and represent the budget at generation time.
+class _RecipeCostSummary extends StatelessWidget {
+  final Recipe recipe;
+
+  const _RecipeCostSummary({required this.recipe});
+
+  @override
+  Widget build(BuildContext context) {
+    final anyKnownPrice = recipe.ingredientCosts.any(
+      (item) => item.estimatedCost != null,
+    );
+    final anyKnownPurchase = recipe.ingredientCosts.any(
+      (item) => !item.inInventory && item.estimatedPurchaseCost != null,
+    );
+    final totalText = recipe.hasUnknownPrices
+        ? anyKnownPrice
+            ? 'Known subtotal: NZ\$${recipe.estimatedCost.toStringAsFixed(2)}'
+            : 'Estimated total: unknown'
+        : 'Estimated total: NZ\$${recipe.estimatedCost.toStringAsFixed(2)}';
+    final purchaseText = recipe.hasUnknownPurchasePrices
+        ? anyKnownPurchase
+            ? 'Extra shopping: at least NZ\$${recipe.estimatedPurchaseCost.toStringAsFixed(2)}'
+            : 'Extra shopping: price estimate unavailable'
+        : 'Extra shopping: ~NZ\$${recipe.estimatedPurchaseCost.toStringAsFixed(2)}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Recipe Cost', style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.bold,
+          )),
+          const SizedBox(height: 8),
+          Text(totalText, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(purchaseText),
+          if (recipe.remainingBudget != null) ...[
+            const SizedBox(height: 4),
+            Text('Remaining budget when generated: NZ\$${recipe.remainingBudget!.toStringAsFixed(2)}'),
+          ],
+          if (recipe.budgetStatus == 'within') ...[
+            const SizedBox(height: 8),
+            const Text('Extra shopping fits your remaining budget.',
+                style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600)),
+          ] else if (recipe.budgetStatus == 'unknown') ...[
+            const SizedBox(height: 8),
+            const Text('Cannot confirm the budget fit because some purchase prices are unavailable.'),
+          ],
+          if (recipe.hasUnknownPrices) ...[
+            const SizedBox(height: 8),
+            const Text('Some ingredient prices are unknown. The known subtotal is not the full recipe cost.',
+                style: TextStyle(fontStyle: FontStyle.italic)),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            'Inventory prices are your recorded item prices. Missing item prices are estimated in NZD.',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+//A badge and a price are shown for every ingredient in a new recommendation.
+class _IngredientPriceTile extends StatelessWidget {
+  final String ingredient;
+  final RecipeIngredientCost? cost;
+
+  const _IngredientPriceTile({required this.ingredient, required this.cost});
+
+  @override
+  Widget build(BuildContext context) {
+    final owned = cost?.inInventory == true;
+    final hasData = cost != null;
+    final label = !hasData
+        ? 'Availability not checked'
+        : owned ? 'In inventory' : 'Need to buy';
+    final price = cost?.estimatedCost;
+    final priceText = price == null
+        ? owned ? 'Price unknown' : 'Estimated price unavailable'
+        : owned
+            ? 'Inventory price: NZ\$${price.toStringAsFixed(2)}'
+            : 'Estimated price: ~NZ\$${price.toStringAsFixed(2)}';
+    final labelColor = owned ? Colors.green.shade700 : Colors.deepOrange.shade700;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(owned ? Icons.check_circle_outline : Icons.shopping_basket_outlined,
+              size: 21, color: hasData ? labelColor : Colors.grey),
+          const SizedBox(width: 10),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(ingredient, style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w500,
+              )),
+              const SizedBox(height: 5),
+              Text(label, style: TextStyle(
+                color: hasData ? labelColor : Colors.grey.shade700,
+                fontWeight: FontWeight.w600, fontSize: 12,
+              )),
+              const SizedBox(height: 3),
+              Text(hasData ? priceText : 'Price unavailable',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            ],
+          )),
+        ],
+      ),
+    );
+  }
+}
 
 //Retries a recipe image when the first network request fails
 class _RetryingRecipeImage extends StatefulWidget {

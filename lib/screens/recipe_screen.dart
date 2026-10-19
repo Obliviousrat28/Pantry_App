@@ -413,8 +413,9 @@ class RecipeCard extends StatelessWidget {
       infoItems.add(
         RecipeInfo(
           icon: Icons.payments_outlined,
-          text:
-              '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
+          text: recipe.hasUnknownPrices
+              ? 'Known ~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}'
+              : '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
         ),
       );
     }
@@ -495,6 +496,18 @@ class RecipeCard extends StatelessWidget {
                 spacing: 15,
                 runSpacing: 10,
                 children: infoItems,
+              ),
+            ],
+
+            //Quick inventory breakdown. Full prices appear under View Recipe.
+            if (recipe.hasIngredientCostBreakdown) ...[
+              const SizedBox(height: 10),
+              Text(
+                '${recipe.ingredientCosts.where((item) => item.inInventory).length} in inventory  •  '
+                '${recipe.ingredientCosts.where((item) => !item.inInventory).length} to buy',
+                style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
 
