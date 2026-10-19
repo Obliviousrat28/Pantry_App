@@ -202,8 +202,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   child: ShoppingItemCard(
                     item: currentItem,
                     onEdit: () => _openEditItemDialog(currentItem),
-                    onCheckedChanged: (bool checked) {
-                      // update the item here, then save it
+                    onCheckedChanged: (bool checked) async {
+                      setState(() {
+                        currentItem.isChecked = checked;
+                      });
+                      await _storageService.saveShoppingItem(currentItem);
                     },
                   ),
                 );

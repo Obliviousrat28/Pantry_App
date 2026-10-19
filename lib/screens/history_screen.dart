@@ -177,6 +177,28 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
+  Future<void> _addToShoppingList(HistoryEntry entry) async {
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
+
+    final shoppingItem = InventoryItem(
+      itemId: const Uuid().v4(),
+      userId: userId,
+      itemName: entry.itemName,           // copied
+      itemQuantity: entry.itemQuantity,   // copied
+      price: 0.0,                         // not copied
+      priceUnknown: true,                 // not copied
+      expiryDate: DateTime.now(),         // placeholder, same as your dialog
+      storageZone: entry.storageZone,
+    );
+
+    await _storageService.saveShoppingItem(shoppingItem);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${entry.itemName} added to shopping list')),
+    );
+  }
+
   @override
   Widget build(BuildContext context)
   {
@@ -254,9 +276,18 @@ class _HistoryScreenState extends State<HistoryScreen>
                     ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () => _confirmReAdd(entry),
-                  child: const Text('Re-add'),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      onPressed: () => _confirmReAdd(entry),
+                      child: const Text('Re-add'),
+                    ),
+                    TextButton(
+                      onPressed: () => _addToShoppingList(entry),
+                      child: const Text('To list'),
+                    ),
+                  ],
                 ),
               ],
             ),

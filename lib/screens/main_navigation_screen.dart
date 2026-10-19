@@ -24,6 +24,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Instantiate the storage service instance
   final StorageService _storageService = StorageService();
 
+  // Screen I want the add item button to show up in
+  static const int _inventoryTab = 0;
+  static const int _budgetTab = 1;
+
   int _currentIndex = 0;
 
   // Shared State
@@ -258,12 +262,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
       body: screens[_currentIndex],
-      floatingActionButton: _currentIndex == 3
-          ? null
-          : FloatingActionButton(
-              onPressed: _openAddModal,
-              child: const Icon(Icons.add),
-            ),
+      floatingActionButton: (_currentIndex == _inventoryTab || _currentIndex == _budgetTab)
+        ? FloatingActionButton(
+            onPressed: _openAddModal,
+            child: const Icon(Icons.add),
+          )
+        : null,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
