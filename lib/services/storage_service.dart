@@ -120,7 +120,7 @@ class StorageService {
     return snapshot.docs.map((doc) => MealLog.fromFirestore(doc)).toList();
   }
 
-  // Saves a list of meal logs to Firestore using a batch operation, merging data for existing logs based on mealDate.
+  // Saves a list of meal logs to Firestore using a batch operation, merging by log ID to ensure uniqueness and prevent duplicates.
   Future<void> saveMealLogs(List<MealLog> logs) async {
     final batch = _firestore.batch();
     for (final log in logs) {
@@ -182,7 +182,7 @@ class StorageService {
   Future<void> deleteUsageEvent(String eventId) async {
     await _userDoc.collection('usage_events').doc(eventId).delete();
   }
-//load usage records from given date onwards (weekly charts)
+//load usage records and callers filter by date (weekly charts)
   Future<List<UsageEvent>> loadUsageEvents() async {
     final snapshot = await _userDoc.collection('usage_events').get();
     return snapshot.docs.map((doc) => UsageEvent.fromFirestore(doc)).toList();

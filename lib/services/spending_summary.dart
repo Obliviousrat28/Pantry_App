@@ -93,33 +93,3 @@ class WeeklySpendingSummary {
     );
   }
 }
-
-  // TEMPORARY: sample spending for the current week, used only to test the
-// charts. It is never saved to Firestore. Delete before submitting.
-List<MealLog> sampleMealLogs({DateTime? now}) {
-  final today = now ?? DateTime.now();
-  final monday = DateTime(today.year, today.month, today.day - (today.weekday - 1));
-
-  // (days after Monday, name, price, source)
-  final samples = [
-    (0, 'Sample groceries', '45.00', 'grocery'),
-    (1, 'Sample lunch', '12.50', 'meal'),
-    (2, 'Sample groceries', '30.00', 'grocery'),
-    (2, 'Sample dinner out', '18.00', 'meal'),
-    (3, 'Sample groceries', '20.00', 'grocery'),
-    (4, 'Sample takeaway', '25.00', 'meal'),
-    (5, 'Sample groceries', '60.00', 'grocery'),
-  ];
-
-  return [
-    for (final s in samples)
-      // Only include days that have already happened this week.
-      if (s.$1 <= today.weekday - 1)
-        MealLog(
-          mealName: s.$2,
-          mealPrice: s.$3,
-          mealDate: DateTime(monday.year, monday.month, monday.day + s.$1, 12),
-          source: s.$4,
-        ),
-    ];
-  }

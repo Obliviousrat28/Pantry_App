@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../models/meal_log.dart';
 import 'spending_insights_screen.dart';
+import '../models/inventory_item.dart';
 
 //Budget screen shows this week's spending against weekly budget goal
 //as a summary card, a line graph and list of individual entries
 class BudgetScreen extends StatelessWidget {
   final double weeklyBudgetGoal;
   final List<MealLog> mealLogs;
+  final List<InventoryItem> inventoryItems;
 
   const BudgetScreen({
     super.key,
     required this.mealLogs,
     required this.weeklyBudgetGoal,
+    required this.inventoryItems,
   });
 
 //return true if the given date is in the current week (Monday to Sunday)
@@ -60,6 +63,7 @@ class BudgetScreen extends StatelessWidget {
                     builder: (ctx) => SpendingInsightsScreen(
                       mealLogs: mealLogs,
                       weeklyBudgetGoal: weeklyBudgetGoal,
+                      inventoryItems: inventoryItems,
                     ),
                   ),
                 );

@@ -4,20 +4,21 @@ import 'package:uuid/uuid.dart';
 //meals are logged in the app to track spending and budget
 // This class represents a single meal log entry
 class MealLog {
-  final String id = const Uuid().v4(); // Unique identifier for the meal log entry
+  final String id; // Unique identifier for the meal log entry
   final String mealName;
   final String mealPrice;
   final DateTime mealDate;
 // 'meal' = eaten out, "grocery" = bought for the pantry
 final String source;
 //'source' is optional and defaults to meal
+
   MealLog({
     String? id,
     required this.mealName,
     required this.mealPrice,
     required this.mealDate,
     this.source = 'meal',
-  });
+  }) : id = id ?? const Uuid().v4(); // Generate a unique ID if not provided
 
 //conver entry to map for firestore storage
   Map<String, dynamic> toFirestore() => {

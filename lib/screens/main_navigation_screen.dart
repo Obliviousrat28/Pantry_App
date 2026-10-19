@@ -273,6 +273,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       BudgetScreen(
         weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
+        inventoryItems: inventoryItems,
       ),
       const RecipesScreen(),
       SettingsScreen(

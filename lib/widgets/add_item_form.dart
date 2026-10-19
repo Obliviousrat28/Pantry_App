@@ -155,7 +155,7 @@ class AddItemFormState extends State<AddItemForm> {
         qtyController.text = best.suggestedQuantity.toString();
         // pre-fill the expiry with Gemini's shelf life estimate, if it gave one
         if (best.estimatedExpiryDate != null) {
-          selectedDate = best.estimatedExpiryDate;
+          _selectedDate = best.estimatedExpiryDate;
         }
       } else if (code != null && nameController.text.isEmpty) {
         nameController.text = lookedUpName ?? code;
