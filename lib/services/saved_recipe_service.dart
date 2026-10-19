@@ -1,98 +1,120 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/recipe.dart';
 
 class SavedRecipeService {
-  //Key used to store saved recipes
-  static const String savedRecipesKey = 'saved_recipes';
+  //Firestore instance
+  final FirebaseFirestore _firestore =
+      FirebaseFirestore.instance;
 
-  //Loads all saved recipes from local storage
+  //Gets the currently signed in user ID
+  String get _userId {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      throw Exception('No user is currently signed in');
+    }
+
+    return user.uid;
+  }
+
+  //Gets the saved recipes collection for the current user
+  CollectionReference<Map<String, dynamic>>
+      get _savedRecipesCollection {
+    return _firestore
+        .collection('users')
+        .doc(_userId)
+        .collection('saved_recipes');
+  }
+
+  //Checks if two recipes are the same
+  bool _sameRecipe(
+    Recipe firstRecipe,
+    Recipe secondRecipe,
+  ) {
+    //Uses source URL when both recipes have one
+    if (firstRecipe.sourceUrl.isNotEmpty &&
+        secondRecipe.sourceUrl.isNotEmpty) {
+      return firstRecipe.sourceUrl ==
+          secondRecipe.sourceUrl;
+    }
+
+    //Falls back to title and description
+    return firstRecipe.title ==
+            secondRecipe.title &&
+        firstRecipe.description ==
+            secondRecipe.description;
+  }
+
+  //Loads saved recipes for the current user
   Future<List<Recipe>> getSavedRecipes() async {
-    final prefs = await SharedPreferences.getInstance();
+    final snapshot =
+        await _savedRecipesCollection.get();
 
-    final savedData =
-        prefs.getStringList(savedRecipesKey) ?? [];
-
-    return savedData.map((recipeString) {
-      final jsonData = jsonDecode(recipeString);
-
+    return snapshot.docs.map((doc) {
       return Recipe.fromJson(
-        jsonData as Map<String, dynamic>,
+        doc.data(),
       );
     }).toList();
   }
 
-  //Checks if a recipe is already saved
-  Future<bool> isRecipeSaved(Recipe recipe) async {
-    final recipes = await getSavedRecipes();
+  //Checks if the recipe is already saved
+  Future<bool> isRecipeSaved(
+    Recipe recipe,
+  ) async {
+    final snapshot =
+        await _savedRecipesCollection.get();
 
-    return recipes.any(
-      (savedRecipe) =>
-          savedRecipe.title == recipe.title &&
-          savedRecipe.description == recipe.description,
-    );
+    for (final doc in snapshot.docs) {
+      final savedRecipe =
+          Recipe.fromJson(doc.data());
+
+      if (_sameRecipe(savedRecipe, recipe)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  //Saves a recipe to local storage
-  Future<void> saveRecipe(Recipe recipe) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final recipes = await getSavedRecipes();
-
-    //Checks if the recipe is already saved
-    final alreadySaved = recipes.any(
-      (savedRecipe) =>
-          savedRecipe.title == recipe.title &&
-          savedRecipe.description == recipe.description,
-    );
+  //Saves the recipe to the current user account
+  Future<void> saveRecipe(
+    Recipe recipe,
+  ) async {
+    final alreadySaved =
+        await isRecipeSaved(recipe);
 
     //Stops duplicate recipes from being saved
     if (alreadySaved) {
       return;
     }
 
-    recipes.add(recipe);
-
-    //Converts recipes into JSON strings
-    final savedData = recipes.map((savedRecipe) {
-      return jsonEncode(
-        savedRecipe.toJson(),
-      );
-    }).toList();
-
-    //Stores the updated recipe list
-    await prefs.setStringList(
-      savedRecipesKey,
-      savedData,
-    );
+    await _savedRecipesCollection.add({
+      ...recipe.toJson(),
+      'savedAt': FieldValue.serverTimestamp(),
+    });
   }
 
-  //Removes a recipe from local storage
-  Future<void> removeRecipe(Recipe recipe) async {
-    final prefs = await SharedPreferences.getInstance();
+  //Removes the recipe from the current user account
+  Future<void> removeRecipe(
+    Recipe recipe,
+  ) async {
+    final snapshot =
+        await _savedRecipesCollection.get();
 
-    final recipes = await getSavedRecipes();
+    final batch = _firestore.batch();
 
-    //Finds and removes the selected recipe
-    recipes.removeWhere(
-      (savedRecipe) =>
-          savedRecipe.title == recipe.title &&
-          savedRecipe.description == recipe.description,
-    );
+    for (final doc in snapshot.docs) {
+      final savedRecipe =
+          Recipe.fromJson(doc.data());
 
-    //Converts the updated list into JSON strings
-    final savedData = recipes.map((savedRecipe) {
-      return jsonEncode(
-        savedRecipe.toJson(),
-      );
-    }).toList();
+      //Deletes the matching recipe
+      if (_sameRecipe(savedRecipe, recipe)) {
+        batch.delete(doc.reference);
+      }
+    }
 
-    //Saves the updated list
-    await prefs.setStringList(
-      savedRecipesKey,
-      savedData,
-    );
+    await batch.commit();
   }
 }
