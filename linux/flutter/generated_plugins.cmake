@@ -6,6 +6,8 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links_linux
   desktop_webview_auth
   file_selector_linux
+  flutter_timezone
+  gtk
   url_launcher_linux
 )
 

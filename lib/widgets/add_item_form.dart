@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 import '../services/barcode_scanner.dart';
+import '../services/ai_camera_recognition.dart';
 import '../services/item_lookup_service.dart';
 
 /// A form widget for adding or editing an inventory item, including fields for name, quantity, price, expiry date, and storage zone.
@@ -77,8 +78,21 @@ class AddItemFormState extends State<AddItemForm> {
     super.dispose();
   }
 
-  // Opens the barcode scanner and updates the scanned barcode and item name if a barcode is successfully scanned.
+  // Starts a scan. The real scanner takes a photo and lets Gemini name the
+  // item and estimate its expiry and quantity. An injected scanner (for
+  // example a fake used in tests) only reads a barcode and looks the name up.
   Future<void> _scanBarcode() async {
+    final scanner = _barcodeService;
+    if (scanner is BarcodeScannerService) {
+      await _scanWithCamera(scanner);
+    } else {
+      await _scanWithBarcodeOnly();
+    }
+  }
+
+  // Barcode only flow: reads the barcode and fills the name from itemLookup,
+  // or the barcode digits if there is no lookup result.
+  Future<void> _scanWithBarcodeOnly() async {
     final code = await _barcodeService.scanBarcode(context);
     if (code == null || !mounted) return;
     final productName = await widget.itemLookup?.getItemName(code);
@@ -89,6 +103,82 @@ class AddItemFormState extends State<AddItemForm> {
         nameController.text = productName ?? code;
       }
     });
+  }
+
+  // Camera flow: takes a photo, keeps any barcode digits as metadata, and
+  // asks Gemini for the item name, expiry estimate and quantity.
+  Future<void> _scanWithCamera(BarcodeScannerService scanner) async {
+    final photo = await scanner.capturePhoto(context);
+    if (photo == null || !mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    String? code;
+    String? lookedUpName;
+    List<RecognizedItem> recognizedItems = [];
+    try {
+      // still read the barcode digits if there are any, kept as metadata
+      code = await scanner.scanBarcodeFromFile(photo);
+
+      // Gemini reads the actual photo and names the product directly
+      final cameraRecognition =
+          CameraRecognition(aiClient: GeminiVisionClient());
+      recognizedItems = await cameraRecognition.recognizeItems(photo);
+      if (recognizedItems.isEmpty) {
+        // one automatic retry, Gemini sometimes answers differently the second time
+        recognizedItems = await cameraRecognition.recognizeItems(photo);
+      }
+
+      // if Gemini could not name it but there is a barcode, try the lookup
+      if (recognizedItems.isEmpty && code != null) {
+        lookedUpName = await widget.itemLookup?.getItemName(code);
+      }
+    } catch (e) {
+      debugPrint('Scan failed: $e');
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop(); // close the spinner
+
+    setState(() {
+      if (code != null) {
+        _scannedBarcode = code;
+      }
+      if (recognizedItems.isNotEmpty) {
+        final best = recognizedItems.first;
+        nameController.text = best.suggestedName;
+        qtyController.text = best.suggestedQuantity.toString();
+        // pre-fill the expiry with Gemini's shelf life estimate, if it gave one
+        if (best.estimatedExpiryDate != null) {
+          selectedDate = best.estimatedExpiryDate;
+        }
+      } else if (code != null && nameController.text.isEmpty) {
+        nameController.text = lookedUpName ?? code;
+      }
+    });
+
+    if (recognizedItems.isNotEmpty &&
+        recognizedItems.first.estimatedExpiryDate != null &&
+        mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Expiry date and quantity are estimates, please check them'),
+        ),
+      );
+    }
+
+    if (recognizedItems.isEmpty && code == null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Couldn't recognize the item. Try better light, spread the items out or change the angle, or type it in manually",
+          ),
+        ),
+      );
+    }
   }
 
   // Validates the form and, if valid, creates a new InventoryItem with the provided data and invokes the onAddItem callback, then closes the dialog.
@@ -131,6 +221,13 @@ class AddItemFormState extends State<AddItemForm> {
               _scannedBarcode == null
                   ? 'Scan Barcode'
                   : 'Scanned: $_scannedBarcode',
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'Scan one type of item at a time, in good light',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           const SizedBox(height: 12),
