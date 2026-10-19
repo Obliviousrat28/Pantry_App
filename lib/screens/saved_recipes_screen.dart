@@ -214,6 +214,18 @@ class SavedRecipeCard extends StatelessWidget {
       );
     }
 
+    //Shows the saved estimated recipe cost
+    if (recipe.estimatedCost > 0) {
+      infoItems.add(
+        _RecipeInfo(
+          icon: Icons.payments_outlined,
+          text: recipe.hasUnknownPrices
+              ? 'Known ~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}'
+              : '~NZ\$${recipe.estimatedCost.toStringAsFixed(2)}',
+        ),
+      );
+    }
+
     return Card(
       margin:
           const EdgeInsets.only(bottom: 15),
@@ -223,6 +235,16 @@ class SavedRecipeCard extends StatelessWidget {
           crossAxisAlignment:
               CrossAxisAlignment.start,
           children: [
+            //Shows the recipe image just like the Recipes page
+            if (recipe.imageUrl.isNotEmpty) ...[
+              _RetryingRecipeImage(
+                imageUrl: recipe.imageUrl,
+                height: 180,
+                borderRadius: 14,
+              ),
+              const SizedBox(height: 14),
+            ],
+
             //Shows the recipe source
             Chip(
               avatar: Icon(
@@ -271,6 +293,18 @@ class SavedRecipeCard extends StatelessWidget {
               ),
             ],
 
+            //Quick inventory breakdown. Full prices appear under View Recipe.
+            if (recipe.hasIngredientCostBreakdown) ...[
+              const SizedBox(height: 10),
+              Text(
+                '${recipe.ingredientCosts.where((item) => item.inInventory).length} in inventory  •  '
+                '${recipe.ingredientCosts.where((item) => !item.inInventory).length} to buy',
+                style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+
             const SizedBox(height: 15),
 
             Row(
@@ -299,6 +333,161 @@ class SavedRecipeCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+//Retries a recipe image when the first network request fails
+class _RetryingRecipeImage extends StatefulWidget {
+  final String imageUrl;
+  final double height;
+  final double borderRadius;
+
+  const _RetryingRecipeImage({
+    required this.imageUrl,
+    required this.height,
+    required this.borderRadius,
+  });
+
+  @override
+  State<_RetryingRecipeImage> createState() =>
+      _RetryingRecipeImageState();
+}
+
+class _RetryingRecipeImageState
+    extends State<_RetryingRecipeImage> {
+  static const int _maxRetries = 2;
+
+  int _attempt = 0;
+  bool _retryScheduled = false;
+
+  @override
+  void didUpdateWidget(
+    covariant _RetryingRecipeImage oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+
+    //Resets retry state when a different recipe image is shown
+    if (oldWidget.imageUrl != widget.imageUrl) {
+      _attempt = 0;
+      _retryScheduled = false;
+    }
+  }
+
+  //Waits briefly and tries the same image request again
+  void _scheduleRetry() {
+    if (_retryScheduled || _attempt >= _maxRetries) {
+      return;
+    }
+
+    _retryScheduled = true;
+    final delaySeconds = (_attempt + 1) * 2;
+
+    Future.delayed(
+      Duration(seconds: delaySeconds),
+      () {
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _attempt += 1;
+          _retryScheduled = false;
+        });
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(
+        widget.borderRadius,
+      ),
+      child: Image.network(
+        widget.imageUrl,
+        key: ValueKey(
+          '${widget.imageUrl}-$_attempt',
+        ),
+        height: widget.height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        loadingBuilder: (
+          context,
+          child,
+          loadingProgress,
+        ) {
+          if (loadingProgress == null) {
+            return child;
+          }
+
+          return Container(
+            height: widget.height,
+            width: double.infinity,
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: const CircularProgressIndicator(),
+          );
+        },
+        errorBuilder: (
+          context,
+          error,
+          stackTrace,
+        ) {
+          if (_attempt < _maxRetries) {
+            _scheduleRetry();
+
+            return Container(
+              height: widget.height,
+              width: double.infinity,
+              color: Colors.grey.shade200,
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Retrying image...',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return Container(
+            height: widget.height,
+            width: double.infinity,
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.image_not_supported_outlined,
+                  size: 36,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Image unavailable',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
