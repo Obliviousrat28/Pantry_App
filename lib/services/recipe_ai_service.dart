@@ -87,7 +87,7 @@ class RecipeService {
           }),
         )
         .timeout(
-          const Duration(seconds: 45),
+          const Duration(seconds: 90),
         );
 
     //Converts a successful response into separate recipe lists
