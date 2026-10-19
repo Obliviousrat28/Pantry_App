@@ -11,6 +11,7 @@ import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
 import 'shopping_list_screen.dart';
+import '../models/usage_event.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -162,15 +163,50 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
-  void _deleteItem(InventoryItem item) async {
+  // Removes an item. If the user said what happened to it ('used' or
+  // 'wasted'), a usage record is saved too; 'none' just deletes it.
+  void _deleteItem(InventoryItem item, String outcome) async {
+    final double unitCost = item.priceUnknown ? 0.0 : item.price;
+
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
-    
-    // Call the dedicated deletion method using the item's unique ID
-    await _storageService.deleteItem(item.itemId);
+
+    // Both writes start straight away so a slow connection can't make
+    // one wait for the other.
+    final deletion = _storageService.deleteItem(item.itemId);
+    final recording = outcome == 'none'
+        ? Future<void>.value()
+        : _storageService.saveUsageEvent(
+            UsageEvent(
+              id: 'del_${item.itemId}',
+              itemName: item.itemName,
+              quantity: item.itemQuantity,
+              value: unitCost * item.itemQuantity,
+              outcome: outcome,
+              origin: 'manual',
+              date: DateTime.now(),
+            ),
+          );
+    await Future.wait([deletion, recording]);
   }
 
+ // UNDO for a delete: puts the item back in the inventory and removes
+  // its usage record. No new spending entry is made and the budget is
+  // not touched, because the original purchase is still on record.
+  void _restoreItem(InventoryItem item) async {
+    setState(() {
+      inventoryItems.add(item);
+    });
+
+    // Both writes start straight away so neither waits for the other.
+    final saving = _storageService.saveItems(inventoryItems);
+    final removing = _storageService.deleteUsageEvent('del_${item.itemId}');
+    await Future.wait([saving, removing]);
+  }
+
+
+ // Opens the dialog for adding an item or logging a meal.
   void _openAddModal() {
     showDialog(
       context: context,
@@ -181,7 +217,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
- void _updateBudgetGoal(double newGoal) async {
+  void _updateBudgetGoal(double newGoal) async {
     final spentSoFar = weeklyBudgetGoal - remainingBudget;
 
     setState(() {
@@ -232,6 +268,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onAddItem: _handleAddItem,
         onEditItem: _editItem,
         onDeleteItem: _deleteItem,
+        onRestoreItem: _restoreItem,
       ),
       BudgetScreen(
         weeklyBudgetGoal: weeklyBudgetGoal,

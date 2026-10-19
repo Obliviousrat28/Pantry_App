@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
+import '../models/usage_event.dart'; 
 
 class StorageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -148,5 +149,20 @@ class StorageService {
       SetOptions(merge: true),
     );
   }
+// ================= USAGE EVENTS =================
 
+  // Save a usage record (used or waste) under user_events
+  Future<void> saveUsageEvent(UsageEvent event) async {
+    await _userDoc.collection('usage_events').doc(event.id).set(event.toFirestore(), SetOptions(merge: true));
+  }
+
+  // Deletes a usage event when user undoes a delete.
+  Future<void> deleteUsageEvent(String eventId) async {
+    await _userDoc.collection('usage_events').doc(eventId).delete();
+  }
+//load usage records from given date onwards (weekly charts)
+  Future<List<UsageEvent>> loadUsageEvents() async {
+    final snapshot = await _userDoc.collection('usage_events').get();
+    return snapshot.docs.map((doc) => UsageEvent.fromFirestore(doc)).toList();
+  }
 }
