@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
+import 'notification_service.dart';
 import '../models/usage_event.dart'; 
 
 class StorageService {
@@ -45,14 +47,31 @@ class StorageService {
 
   // Loads the inventory items for the current user from Firestore, returning a list of InventoryItem objects.
   Future<List<InventoryItem>> loadItems() async {
-    final snapshot = await _userDoc.collection('inventory').get();
-    return snapshot.docs
-        .map((doc) => InventoryItem.fromFirestore(doc))
-        .toList();
-  }
+  final snapshot = await _userDoc.collection('inventory').get();
+  final items = snapshot.docs
+      .map((doc) => InventoryItem.fromFirestore(doc))
+      .toList();
+  NotificationService.instance.rescheduleAll(items); // not awaited on purpose
+  return items;
+}
 
   // Saves a list of inventory items to Firestore using a batch operation, merging data for existing items.
-  Future<void> saveItems(List<InventoryItem> items) async {
+    Future<void> saveItems(List<InventoryItem> items) async {
+    // Schedule reminders first, so a slow or offline Firestore save
+    // can never block them. Errors are logged, not thrown, so
+    // notifications can never break saving.
+    for (final item in items) {
+      try {
+        await NotificationService.instance.scheduleExpiryReminder(
+          itemId: item.itemId,
+          itemName: item.itemName,
+          expiryDate: item.expiryDate,
+        );
+      } catch (e) {
+        debugPrint('Reminder error for ${item.itemName}: $e');
+      }
+    }
+
     final batch = _firestore.batch();
     for (final item in items) {
       final docRef = _userDoc.collection('inventory').doc(item.itemId);
@@ -63,8 +82,11 @@ class StorageService {
 
   // Deletes an inventory item from Firestore based on the provided itemId.
   Future<void> deleteItem(String itemId) async {
-    await _userDoc.collection('inventory').doc(itemId).delete();
-  }
+  await _userDoc.collection('inventory').doc(itemId).delete();
+  try {
+    await NotificationService.instance.cancelReminder(itemId);
+  } catch (_) {}
+}
 
   // ================= SHOPPING LIST =================
 
