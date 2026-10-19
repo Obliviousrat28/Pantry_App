@@ -10,6 +10,7 @@ import 'budget_screen.dart';
 import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
+import 'history_screen.dart';
 import 'shopping_list_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -95,6 +96,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    await _storageService.addHistoryItem(item, 'added');
   }
 
   // Scenario 2: Logging a Meal Directly
@@ -154,6 +156,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Call the dedicated deletion method using the item's unique ID
     await _storageService.deleteItem(item.itemId);
+    await _storageService.addHistoryItem(item, 'removed');
   }
 
   void _openAddModal() {
@@ -207,6 +210,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       'Inventory',
       'Budget',
       'Recipes',
+      'History',
       'Settings',
     ];
 
@@ -223,6 +227,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
       ),
       const RecipesScreen(),
+      HistoryScreen(
+        onAddItem: _handleAddItem,
+      ),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
@@ -251,10 +258,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
       body: screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddModal,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _currentIndex == 3
+          ? null
+          : FloatingActionButton(
+              onPressed: _openAddModal,
+              child: const Icon(Icons.add),
+            ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
