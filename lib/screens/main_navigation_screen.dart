@@ -254,7 +254,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (ctx) => const ShoppingListScreen(),
+                    builder: (ctx) => ShoppingListScreen(onAddItem: _handleAddItem),
                   ),
                 );
               },

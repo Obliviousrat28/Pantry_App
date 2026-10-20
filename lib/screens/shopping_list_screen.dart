@@ -5,9 +5,12 @@ import '../models/inventory_item.dart';
 import '../services/storage_service.dart';
 import '../widgets/shopping_item_add_dialog.dart';
 import '../widgets/shopping_item_card.dart';
+import 'package:uuid/uuid.dart';
 
 class ShoppingListScreen extends StatefulWidget {
-  const ShoppingListScreen({super.key});
+  final Function(InventoryItem) onAddItem;
+
+  const ShoppingListScreen({super.key, required this.onAddItem});
 
   @override
   State<ShoppingListScreen> createState() => _ShoppingListScreenState();
@@ -164,6 +167,55 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
   }
 
+  Future<void> _markAsBought(InventoryItem item) async {
+    DateTime? expiry;
+
+    if (item.expiryDate.isAfter(DateTime.now())) {
+      // Came from history: use the stored expiry
+      expiry = item.expiryDate;
+    } else {
+      // Manual item (or shelf life already passed): ask the user
+      expiry = await showDatePicker(
+        context: context,
+        helpText: 'When does ${item.itemName} expire?',
+        initialDate: DateTime.now().add(const Duration(days: 7)),
+        firstDate: DateTime.now(),
+        lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      );
+    }
+
+    if (!mounted) return;
+
+    if (expiry == null) {
+      // Cancelled: put the checkbox back
+      setState(() => item.isChecked = false);
+      return;
+    }
+
+    final inventoryItem = InventoryItem(
+      itemId: const Uuid().v4(),
+      userId: item.userId,
+      itemName: item.itemName,
+      itemQuantity: item.itemQuantity,
+      price: item.price,
+      priceUnknown: item.priceUnknown,
+      expiryDate: expiry,
+      storageZone: item.storageZone,
+    );
+
+    widget.onAddItem(inventoryItem);
+
+    setState(() {
+      _shoppingItems.removeWhere((e) => e.itemId == item.itemId);
+    });
+    await _storageService.deleteShoppingItem(item.itemId);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${item.itemName} moved to inventory')),
+    );
+  }
+
   // Build the Shopping List Screen UI
   @override
   Widget build(BuildContext context) {
@@ -212,11 +264,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   child: ShoppingItemCard(
                     item: currentItem,
                     onEdit: () => _openEditItemDialog(currentItem),
-                    onCheckedChanged: (bool checked) async {
-                      setState(() {
-                        currentItem.isChecked = checked;
-                      });
-                      await _storageService.saveShoppingItem(currentItem);
+                    onCheckedChanged: (bool checked) {
+                      setState(() => currentItem.isChecked = checked);
+                      if (checked) _markAsBought(currentItem);
                     },
                   ),
                 );

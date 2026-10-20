@@ -180,14 +180,18 @@ class _HistoryScreenState extends State<HistoryScreen>
   Future<void> _addToShoppingList(HistoryEntry entry) async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
 
+    // How long this item lasted last time, with a 1 day minimum
+    int shelfLifeDays = entry.expiryDate.difference(entry.dateAdded).inDays;
+    if (shelfLifeDays < 1) shelfLifeDays = 7; 
+
     final shoppingItem = InventoryItem(
       itemId: const Uuid().v4(),
       userId: userId,
-      itemName: entry.itemName,           // copied
-      itemQuantity: entry.itemQuantity,   // copied
-      price: 0.0,                         // not copied
-      priceUnknown: true,                 // not copied
-      expiryDate: DateTime.now(),         // placeholder, same as your dialog
+      itemName: entry.itemName,
+      itemQuantity: entry.itemQuantity,
+      price: entry.price,                 // optional: carry the last price over
+      priceUnknown: entry.priceUnknown,
+      expiryDate: DateTime.now().add(Duration(days: shelfLifeDays)),
       storageZone: entry.storageZone,
     );
 
@@ -197,6 +201,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${entry.itemName} added to shopping list')),
     );
+    // snackbar as before
   }
 
   @override
