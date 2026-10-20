@@ -7,11 +7,14 @@ import '../../models/inventory_item.dart';
 class ItemCard extends StatelessWidget {
   final InventoryItem item;
   final VoidCallback? onEdit;
+  final bool showPrice;                 
 
+  /// Constructor for creating an ItemCard widget with required and optional parameters.
   const ItemCard({
     super.key,
     required this.item,
     required this.onEdit,
+    this.showPrice = false, 
   });
 
 /// Builds the widget tree for the ItemCard.
@@ -48,6 +51,20 @@ class ItemCard extends StatelessWidget {
       borderColor = Colors.orange;
       backgroundColor = Colors.orange.shade50;
       textColor = Colors.orange.shade900;
+    }
+
+    // Determine the text to display on the badge based on whether to show price or expiry date
+    final String badgeText = showPrice
+        ? (item.priceUnknown
+            ? 'Price unknown'
+            : '\$${item.price.toStringAsFixed(2)}')
+        : 'Expires: $formattedDate';
+
+    // Shopping list mode: neutral badge instead of expiry warning colours
+    if (showPrice) {
+      borderColor = Colors.transparent;
+      backgroundColor = Colors.transparent;
+      textColor = Colors.black87;
     }
 
     // Return the card widget with the appropriate styling and content
@@ -98,7 +115,7 @@ class ItemCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    'Expires: $formattedDate',
+                    badgeText,
                     style: TextStyle(
                       color: textColor,
                       fontWeight: borderColor == Colors.transparent

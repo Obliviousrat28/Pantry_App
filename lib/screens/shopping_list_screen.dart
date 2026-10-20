@@ -3,8 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/inventory_item.dart';
 import '../services/storage_service.dart';
-import '../widgets/shopping_item_add_dialog.dart';
-import '../widgets/shopping_item_card.dart';
+import '../widgets/item_card.dart';
+import '../widgets/item_add_dialog.dart';
 import 'package:uuid/uuid.dart';
 
 class ShoppingListScreen extends StatefulWidget {
@@ -39,40 +39,40 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   // Open Dialog to Add Item & Save to Firestore
   void _openAddItemDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => ShoppingItemAddDialog(
-        onAddItem: (newItem) async {
-          setState(() {
-            _shoppingItems.add(newItem);
-          });
-          await _storageService.saveShoppingItem(newItem);
-        },
-      ),
-    );
-  }
+  showDialog(
+    context: context,
+    builder: (ctx) => ItemAddDialog(
+      onAddItem: (newItem) async {
+        setState(() {
+          _shoppingItems.add(newItem);
+        });
+        await _storageService.saveShoppingItem(newItem);
+      },
+    ),
+  );
+}
 
-  // Open Dialog to Edit Item & Update Firestore
-  void _openEditItemDialog(InventoryItem item) {
-    showDialog(
-      context: context,
-      builder: (ctx) => ShoppingItemAddDialog(
-        initialData: item,
-        onAddItem: (updatedItem) async {
-          setState(() {
-            item.edit(
-              name: updatedItem.itemName,
-              quantity: updatedItem.itemQuantity,
-              price: updatedItem.price,
-              priceUnknown: updatedItem.priceUnknown,
-            );
-          });
-          await _storageService.saveShoppingItem(item);
-        },
-      ),
-    );
-  }
-
+void _openEditItemDialog(InventoryItem item) {
+  showDialog(
+    context: context,
+    builder: (ctx) => ItemAddDialog(
+      initialData: item,
+      onAddItem: (updatedItem) async {
+        setState(() {
+          item.edit(
+            name: updatedItem.itemName,
+            quantity: updatedItem.itemQuantity,
+            price: updatedItem.price,
+            expiry: updatedItem.expiryDate,
+            zone: updatedItem.storageZone,
+            priceUnknown: updatedItem.priceUnknown,
+          );
+        });
+        await _storageService.saveShoppingItem(item);
+      },
+    ),
+  );
+}
   // Delete Item & Remove from Firestore with Undo option
   void _deleteItem(InventoryItem item) async {
     final deletedIndex = _shoppingItems.indexWhere((e) => e.itemId == item.itemId);
@@ -261,13 +261,27 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     child: const Icon(Icons.delete, color: Colors.white),
                   ),
                   onDismissed: (_) => _deleteItem(currentItem),
-                  child: ShoppingItemCard(
-                    item: currentItem,
-                    onEdit: () => _openEditItemDialog(currentItem),
-                    onCheckedChanged: (bool checked) {
-                      setState(() => currentItem.isChecked = checked);
-                      if (checked) _markAsBought(currentItem);
-                    },
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Checkbox(
+                          value: currentItem.isChecked,
+                          onChanged: (v) {
+                            final checked = v ?? false;
+                            setState(() => currentItem.isChecked = checked);
+                            if (checked) _markAsBought(currentItem);
+                          },
+                        ),
+                      ),
+                      Expanded(
+                        child: ItemCard(
+                          item: currentItem,
+                          showPrice: true,
+                          onEdit: () => _openEditItemDialog(currentItem),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
