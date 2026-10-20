@@ -138,8 +138,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final double newTotalCost = newUnitCost * updatedItem.itemQuantity;
 
     final double costDifference = newTotalCost - oldTotalCost;
-    
-    // Update the inventory item, meal logs, and remaining budget
+
     setState(() {
       // Replace the item and adjust the remaining budget by the difference.
       inventoryItems[index] = updatedItem;
@@ -152,12 +151,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         (log) => log.mealName == oldFormattedName,
       );
 
-<<<<<<< HEAD
-      // If a corresponding meal log is found, update it with the new item details
-=======
       // Rebuild that entry with the new name and price. The original date
       // and source are kept, so an edited grocery item stays a grocery.
->>>>>>> origin/main
       if (logIndex != -1) {
         mealLogs[logIndex] = MealLog(
           id: mealLogs[logIndex].id,// Preserve the original ID for Firestore
@@ -175,16 +170,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
-<<<<<<< HEAD
-  // Scenario 3: Deleting an Inventory Item
-  void _deleteItem(InventoryItem item) async {
-=======
   // Removes an item. If the user said what happened to it ('used' or
   // 'wasted'), a usage record is saved too; 'none' just deletes it.
   void _deleteItem(InventoryItem item, String outcome) async {
     final double unitCost = item.priceUnknown ? 0.0 : item.price;
 
->>>>>>> origin/main
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
@@ -213,9 +203,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await Future.wait([deletion, recording]);
   }
 
-<<<<<<< HEAD
-  // Opens a dialog to add a new inventory item or log a meal, depending on the user's choice.
-=======
  // UNDO for a delete: puts the item back in the inventory and removes
   // its usage record. No new spending entry is made and the budget is
   // not touched, because the original purchase is still on record.
@@ -232,7 +219,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
 
  // Opens the dialog for adding an item or logging a meal.
->>>>>>> origin/main
   void _openAddModal() {
     showDialog(
       context: context,
@@ -243,10 +229,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-<<<<<<< HEAD
-  // Updates the weekly budget goal and adjusts the remaining budget accordingly.
-=======
->>>>>>> origin/main
   void _updateBudgetGoal(double newGoal) async {
     final spentSoFar = weeklyBudgetGoal - remainingBudget;
 
@@ -262,7 +244,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
-  // Updates the user's dietary preferences and persists the changes to storage.
   void _updateDietaryPreferences(List<String> preferences) async {
     if (currentUser == null) return;
     setState(() {
@@ -276,7 +257,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  // Builds the main UI of the main navigation screen, displaying different screens based on the selected tab and providing a floating action button for adding items or logging meals.
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -294,7 +274,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       'Settings',
     ];
 
-    // Define the list of screens corresponding to each tab in the bottom navigation bar
     final List<Widget> screens = [
       ZoneScreen(
         title: 'Inventory',
@@ -302,13 +281,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onAddItem: _handleAddItem,
         onEditItem: _editItem,
         onDeleteItem: _deleteItem,
-<<<<<<< HEAD
-      ), // Inventory Screen
-      BudgetScreen(
-        weeklyBudgetGoal: weeklyBudgetGoal,
-        mealLogs: mealLogs,
-      ), // Budget Screen
-=======
         onRestoreItem: _restoreItem,
       ),
       BudgetScreen(
@@ -316,12 +288,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         mealLogs: mealLogs,
         inventoryItems: inventoryItems,
       ),
->>>>>>> origin/main
       const RecipesScreen(),
       // History screen uses the same add function so re-added items update the spend log and budget
       HistoryScreen(
         onAddItem: _handleAddItem,
-      ),// History Screen
+      ),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
@@ -330,7 +301,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     ];
 
-    // Return the main scaffold with app bar, body, floating action button, and bottom navigation bar
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_currentIndex]),
