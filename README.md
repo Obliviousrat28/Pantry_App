@@ -1,4 +1,131 @@
-# my_pantry
+## my_pantry
+ My pantry is a Flutter mobile app that helps people track the food that they have in their kitchen, spend less on groceries and waste less food. Users can record what is in their fridge, freezer, and pantry. They can get reminded when items will expire and track expiry dates. They can track their weekly spending on groceries and meals eaten out against their set budget goal, track their waste, get recipes recommended to them based on what they have and their budget, as well their dietary preferences. 
 
-A new Flutter project.
-#Pantry_App
+## Authors
+Natalia (Product Owner): User Authentication, Budget and Settings screens, Budget tracking for meals/groceries, spending insights (pie chart + line graph), purchase date picker, used/wasted usage tracking.
+
+Tom Williams (SCRUM Master): Inventory Screen, Add item widget, Firebase/Firestore Storage, Storage Zones, Shopping list, Supermarket finder, Expiry Date tracking
+
+Dogan (Development Team): Recipe Screen, AI Recipe Recommendation, Estimated prices for recipes, Recipes account for user budget.
+
+Mustafa (Development Team): AI camera autofills item forms, Item expiry notifications, Barcode scanner, Meal logging
+
+Ilhan(Development Team): Login/Registration Screen, History Screen, Login/Signup validation.
+
+## Features
+- Accounts: 
+ sign up and log in with email and password validation. upon signup a user is asked for their weekly budget goal and dietary preferences.
+- Inventory : 
+Users can add, edit, delete items in three storage zones (fridge, freezer, pantry) with the name of the item, price, quantity, expiry date.
+- Adding Items/Logging Meals: 
+Users can add groceries to their inventory or log a meal that they have eaten out to be included in their weekly budget.
+- AI Camera Scanner: Users can scan a barcode or an item through their phone camera to quickly fill the 'Add Item' form. 
+- Purchase Date: 
+A user can choose when an item was purchased when they add an item so the item is not added into this week's spending if they forgot to add it in a previous week.
+- Used or Wasted tracking: 
+When users need to update their inventory to reflect what they currently have, they can delete the item, mark it as used, or mark it as wasted. If an item has expired this week, then it counts towards their waste for the current week.
+- Expiry Reminders:
+Users are sent notifications for food that is expiring within three days.
+- Shopping List: Users can keep a list of items that they need to buy.
+- Budget: 
+Users can view how they are tracking against their weekly budget goal with remaining and spent. The spending Log shows a user's entries for meals and groceries in the past week. 
+- Spending Insights:
+Users can view a line graph with their spent budget day to day for the current week and their budget goal. Users can view a pie chart with slices for: their remaining budget for the week, the items they bought this week that are still in their pantry, items they used this week, items that were wasted this week (expired or thrown away), and meals that were eaten out.
+- History: 
+Users can view previous items they have bought and quick add it back to their inventory. Users can view when they deleted something from their inventory or when something was added.
+- Recipes: 
+A user can have AI recipes recommended to them based on their remaining budget for the week, their current inventory items, and their dietary preferences. Users can save recipes that they like. The recipes report the price of a recipe based on recorded prices of items from their inventory or estimated pricers for items not owned. Ingredients are marked if they are in the user's inventory or not. Recipes have pictures and instructions. 
+- Settings: 
+The settings screen allows users to change their weekly budget goal, dietary preferences, and to sign out of their account.
+
+## Requirements
+- Flutter SDK with Dart '^3.12.2' (see 'pubspec.yaml')
+- Xcode and CocoaPods for iOS, or Android Studio for Android
+- A Firebase project (this app uses 'my-pantry-app-f9777')
+- A Google Gemini API key for camera recognition 
+
+The app was developed and tested on both iOS and Android.
+
+## Dependencies 
+All packages are listed in 'pubspec.yaml' and installed with 'flutter pub get'
+
+Login and Data storage:
+- firebase_core
+- firebase_auth
+- cloud_firestore
+- firebase_ui_auth 
+
+Barcode Reading:
+- google_mlkit_barcode_scanning
+- google_mlkit_image_labeling 
+
+AI Camera: 
+- flutter_gemini 
+
+Camera access: 
+- image_picker
+- permission_handler 
+
+Expiry Reminders: 
+- flutter_local_notifications
+- timezone
+- flutter_timezone 
+
+Recipe backend and Open Food Facts:
+- http 
+
+Spending Insight Charts:
+- fl_chart
+
+Unique IDs and small local settings: 
+- uuid
+- shared_preferences 
+
+## Setup
+
+1. Clone the repository and open the project folder
+2. Install the packages:
+- "flutter pub get"
+3. Add your API key. The file 'lib/api_keys.dart' is not in the repository so create a copy 'lib/api_keys.example.dart' (please do not edit this file) and put your own gemini key from the link into your copied file.
+4. For iOS, install the native pods in Terminal: 
+- "cd ios"
+- "pod install"
+- "cd .."
+
+5. Connect a phone or start a simulator, then run: 
+- "flutter run" 
+
+## Example Usage: 
+
+1. **Create an account**
+Open the app, choose sign up, enter a username, email, password, weekly budget (for example 250) and any dietary preferences.
+2. **Add an item.** 
+On the Inventory tab tap the **+** button, choose Add item, enter `Milk`, quantity `1`, price `5`, an expiry date and a storage zone. Use the **Bought** date to record an earlier purchase.
+3. **Scan instead of typing.** 
+In the add item form, tap the camera button to scan a barcode or photograph the item.
+4. **Record what happened to an item.** 
+Swipe an item to remove it. Choose **Record usage**, then **Used** or **Thrown away**, or choose **Delete** to remove it with no record. Tap **UNDO** in the message at the bottom to bring it back.
+5. **Log a meal out.**
+ Tap **+**, choose Log meal, enter `Lunch` and `15.00`.
+6. **See your spending.**
+ Open the Budget tab to see the goal, what you have spent and what remains, then tap **View spending charts** for the line graph and the pie chart.
+7. **Get recipes.** 
+Open the Recipes tab, generate recommendations, open a recipe to see which ingredients you already have and the estimated cost, and tap the bookmark to save it.
+
+## Project structure
+
+lib/
+  main.dart            App start and login check
+  models/              Data classes (InventoryItem, MealLog, UsageEvent, Recipe, User, ...)
+  services/            Storage (Firestore), notifications, recipes, camera, barcode, validation, spending summaries
+  screens/             App screens (inventory, budget, spending insights, recipes, settings, login, sign up)
+  widgets/             Reusable UI parts (forms, cards, charts)
+
+
+## Known limitations
+
+- Deleting an item without recording usage does not remove its spending entry.
+- Editing an item does not change its purchase date.
+- The pie chart counts an item as wasted from its expiry day, and only for items that expire in the current week (Monday to Sunday).
+- Barcode scanning is not enabled on the shopping list.
+- Some legacy classes in `lib/models` (`Budget`, `SpendLogEntry`, `SpendSource` and `DietaryPreferences`) are not used by the app.
