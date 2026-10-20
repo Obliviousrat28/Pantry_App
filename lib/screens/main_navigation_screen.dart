@@ -104,6 +104,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    // Records the added item in the user's history
     await _storageService.addHistoryItem(item, 'added');
   }
 
@@ -180,6 +181,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Call the dedicated deletion method using the item's unique ID
     await _storageService.deleteItem(item.itemId);
+    // Records the removed item in the user's history
     await _storageService.addHistoryItem(item, 'removed');
 
     // Both writes start straight away so a slow connection can't make
@@ -287,6 +289,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         inventoryItems: inventoryItems,
       ),
       const RecipesScreen(),
+      // History screen uses the same add function so re-added items update the spend log and budget
       HistoryScreen(
         onAddItem: _handleAddItem,
       ),

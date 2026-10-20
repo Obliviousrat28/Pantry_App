@@ -172,10 +172,10 @@ class StorageService {
       SetOptions(merge: true),
     );
   }
-// ================= USAGE EVENTS =================
 
   // ================= HISTORY =================
 
+  // Saves a new history entry for an item, recording whether it was 'added' or 'removed' and when.
   Future<void> addHistoryItem(InventoryItem item, String action) async
   {
     HistoryEntry entry = HistoryEntry(
@@ -188,9 +188,11 @@ class StorageService {
       action: action,
       dateAdded: DateTime.now(),
     );
+    // add() creates a new document every time, so each action gets its own entry
     await _userDoc.collection('history').add(entry.toFirestore());
   }
 
+  // Loads the 50 most recent history entries for the current user, newest first.
   Future<List<HistoryEntry>> loadHistory() async
   {
     final snapshot = await _userDoc
@@ -199,6 +201,10 @@ class StorageService {
         .limit(50)
         .get();
     return snapshot.docs.map((doc) => HistoryEntry.fromFirestore(doc)).toList();
+  }
+
+  // ================= USAGE EVENTS =================
+
   // Save a usage record (used or waste) under user_events
   Future<void> saveUsageEvent(UsageEvent event) async {
     await _userDoc.collection('usage_events').doc(event.id).set(event.toFirestore(), SetOptions(merge: true));
