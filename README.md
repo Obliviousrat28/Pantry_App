@@ -13,29 +13,33 @@ Mustafa (Development Team): AI camera autofills item forms, Item expiry notifica
 Ilhan(Development Team): Login/Registration Screen, History Screen, Login/Signup validation.
 
 ## Features
-- Accounts: 
+**Accounts** 
  sign up and log in with email and password validation. upon signup a user is asked for their weekly budget goal and dietary preferences.
-- Inventory : 
+**Inventory** 
 Users can add, edit, delete items in three storage zones (fridge, freezer, pantry) with the name of the item, price, quantity, expiry date.
-- Adding Items/Logging Meals: 
+**Adding Items/Logging Meals**
 Users can add groceries to their inventory or log a meal that they have eaten out to be included in their weekly budget.
-- AI Camera Scanner: Users can scan a barcode or an item through their phone camera to quickly fill the 'Add Item' form. 
-- Purchase Date: 
+**AI Camera Scanner**
+Users can scan a barcode or an item through their phone camera to quickly fill the 'Add Item' form. 
+**Purchase Date**
 A user can choose when an item was purchased when they add an item so the item is not added into this week's spending if they forgot to add it in a previous week.
-- Used or Wasted tracking: 
+**Used or Wasted tracking**
 When users need to update their inventory to reflect what they currently have, they can delete the item, mark it as used, or mark it as wasted. If an item has expired this week, then it counts towards their waste for the current week.
-- Expiry Reminders:
+**Expiry Reminders**
 Users are sent notifications for food that is expiring within three days.
-- Shopping List: Users can keep a list of items that they need to buy.
-- Budget: 
+**Shopping List**
+ Users can keep a list of items that they need to buy which users can check off and have added to their inventory after it is bought. 
+**Store Finder** 
+Users are redirected to the Store Finder through the shopping list screen. Users are redirected to google maps and the nearest supermarkets to them are shown with directions, opening hours, etc.
+**Budget** 
 Users can view how they are tracking against their weekly budget goal with remaining and spent. The spending Log shows a user's entries for meals and groceries in the past week. 
-- Spending Insights:
+**Spending Insights**
 Users can view a line graph with their spent budget day to day for the current week and their budget goal. Users can view a pie chart with slices for: their remaining budget for the week, the items they bought this week that are still in their pantry, items they used this week, items that were wasted this week (expired or thrown away), and meals that were eaten out.
-- History: 
+**History**
 Users can view previous items they have bought and quick add it back to their inventory. Users can view when they deleted something from their inventory or when something was added.
-- Recipes: 
+**Recipes** 
 A user can have AI recipes recommended to them based on their remaining budget for the week, their current inventory items, and their dietary preferences. Users can save recipes that they like. The recipes report the price of a recipe based on recorded prices of items from their inventory or estimated pricers for items not owned. Ingredients are marked if they are in the user's inventory or not. Recipes have pictures and instructions. 
-- Settings: 
+**Settings**
 The settings screen allows users to change their weekly budget goal, dietary preferences, and to sign out of their account.
 
 ## Requirements
@@ -49,37 +53,43 @@ The app was developed and tested on both iOS and Android.
 ## Dependencies 
 All packages are listed in 'pubspec.yaml' and installed with 'flutter pub get'
 
-Login and Data storage:
+**Login and Data storage**
 - firebase_core
 - firebase_auth
 - cloud_firestore
 - firebase_ui_auth 
 
-Barcode Reading:
+**Barcode Reading**
 - google_mlkit_barcode_scanning
 - google_mlkit_image_labeling 
 
-AI Camera: 
+**AI Camera**
 - flutter_gemini 
 
-Camera access: 
+**Camera access**
 - image_picker
 - permission_handler 
 
-Expiry Reminders: 
+**Expiry Reminders**
 - flutter_local_notifications
 - timezone
 - flutter_timezone 
 
-Recipe backend and Open Food Facts:
+**Recipe backend and Open Food Facts**
 - http 
 
-Spending Insight Charts:
+**Spending Insight Charts**
 - fl_chart
 
-Unique IDs and small local settings: 
+**Unique IDs and small local settings**
 - uuid
 - shared_preferences 
+
+**Phone Permission for location** 
+- Geolocator
+
+**Open Google Maps in browser or app** 
+- url_launcher
 
 ## Setup
 
