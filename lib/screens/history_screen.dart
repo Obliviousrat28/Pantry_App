@@ -5,6 +5,7 @@ import '../models/history_entry.dart';
 import '../models/inventory_item.dart';
 import '../services/storage_service.dart';
 
+// The HistoryScreen displays a list of history entries, allowing users to re-add items to their inventory or add them to their shopping list.
 class HistoryScreen extends StatefulWidget
 {
   final Function(InventoryItem) onAddItem;
@@ -15,6 +16,7 @@ class HistoryScreen extends StatefulWidget
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
+// The state class for the HistoryScreen, managing the list of history entries and their interactions.
 class _HistoryScreenState extends State<HistoryScreen>
 {
   final StorageService _storageService = StorageService();
@@ -28,6 +30,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     _loadHistory();
   }
 
+  // Loads the history entries from the storage service and updates the state accordingly, handling any errors that may occur during the loading process.
   Future<void> _loadHistory() async
   {
     List<HistoryEntry> entries = [];
@@ -52,6 +55,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     });
   }
 
+  // Formats a DateTime object into a string with the format "dd/MM/yyyy".
   String _formatDate(DateTime date)
   {
     String day = date.day.toString().padLeft(2, '0');
@@ -59,6 +63,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '$day/$month/${date.year}';
   }
 
+  // Formats a DateTime object into a string with the format "dd/MM/yyyy at hh:mm AM/PM".
   String _formatDateTime(DateTime date)
   {
     int hour = date.hour % 12;
@@ -77,12 +82,14 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '${_formatDate(date)} at $hour:$minute $period';
   }
 
+  // Returns the name of the storage zone for a history entry, capitalizing the first letter.
   String _zoneName(HistoryEntry entry)
   {
     String name = entry.storageZone.name;
     return name[0].toUpperCase() + name.substring(1);
   }
 
+  // Returns a formatted string representing the price of a history entry, indicating if the price is unknown or displaying the price per unit.
   String _priceText(HistoryEntry entry)
   {
     if (entry.priceUnknown)
@@ -92,6 +99,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '\$${entry.price.toStringAsFixed(2)} each';
   }
 
+  // Calculates the total price for a history entry, returning a formatted string or indicating if the price is unknown.
   String _totalText(HistoryEntry entry)
   {
     if (entry.priceUnknown)
@@ -102,6 +110,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return 'Total \$${total.toStringAsFixed(2)}';
   }
 
+  // Confirms with the user before re-adding an item from the history back to the inventory, displaying relevant details and options to cancel or proceed.
   Future<void> _confirmReAdd(HistoryEntry entry) async
   {
     bool? confirmed = await showDialog<bool>(
@@ -139,6 +148,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     _reAddItem(entry);
   }
 
+  // Re-adds the item from the history entry back to the inventory and updates the history with a new entry indicating the addition.
   void _reAddItem(HistoryEntry entry)
   {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
@@ -177,6 +187,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
+  // Adds the item from the history entry to the shopping list, calculating a new expiry date based on the previous shelf life.
   Future<void> _addToShoppingList(HistoryEntry entry) async {
     final userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
 
@@ -204,6 +215,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     // snackbar as before
   }
 
+  // Builds the main UI of the history screen, displaying a loading indicator, a message for empty history, or a list of history entries with options to re-add or add to shopping list.
   @override
   Widget build(BuildContext context)
   {
@@ -212,6 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
+  // Constructs the body of the history screen, handling loading state, empty history, and displaying a list of history entries with relevant details and actions.
   Widget _buildBody()
   {
     if (_isLoading)
@@ -232,6 +245,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       );
     }
 
+    // Display the list of history entries
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       itemCount: _history.length,

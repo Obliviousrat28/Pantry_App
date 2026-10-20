@@ -129,7 +129,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final double newTotalCost = newUnitCost * updatedItem.itemQuantity;
 
     final double costDifference = newTotalCost - oldTotalCost;
-
+    
+    // Update the inventory item, meal logs, and remaining budget
     setState(() {
       inventoryItems[index] = updatedItem;
       remainingBudget -= costDifference;
@@ -139,6 +140,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         (log) => log.mealName == oldFormattedName,
       );
 
+      // If a corresponding meal log is found, update it with the new item details
       if (logIndex != -1) {
         mealLogs[logIndex] = MealLog(
           mealName: '${updatedItem.itemName} (x${updatedItem.itemQuantity.toInt()})',
@@ -153,6 +155,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
+  // Scenario 3: Deleting an Inventory Item
   void _deleteItem(InventoryItem item) async {
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
@@ -163,6 +166,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.addHistoryItem(item, 'removed');
   }
 
+  // Opens a dialog to add a new inventory item or log a meal, depending on the user's choice.
   void _openAddModal() {
     showDialog(
       context: context,
@@ -173,7 +177,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
- void _updateBudgetGoal(double newGoal) async {
+  // Updates the weekly budget goal and adjusts the remaining budget accordingly.
+  void _updateBudgetGoal(double newGoal) async {
     final spentSoFar = weeklyBudgetGoal - remainingBudget;
 
     setState(() {
@@ -188,6 +193,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
+  // Updates the user's dietary preferences and persists the changes to storage.
   void _updateDietaryPreferences(List<String> preferences) async {
     if (currentUser == null) return;
     setState(() {
@@ -201,6 +207,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  // Builds the main UI of the main navigation screen, displaying different screens based on the selected tab and providing a floating action button for adding items or logging meals.
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -218,6 +225,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       'Settings',
     ];
 
+    // Define the list of screens corresponding to each tab in the bottom navigation bar
     final List<Widget> screens = [
       ZoneScreen(
         title: 'Inventory',
@@ -225,15 +233,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onAddItem: _handleAddItem,
         onEditItem: _editItem,
         onDeleteItem: _deleteItem,
-      ),
+      ), // Inventory Screen
       BudgetScreen(
         weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
-      ),
+      ), // Budget Screen
       const RecipesScreen(),
       HistoryScreen(
         onAddItem: _handleAddItem,
-      ),
+      ),// History Screen
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
@@ -242,6 +250,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
     ];
 
+    // Return the main scaffold with app bar, body, floating action button, and bottom navigation bar
     return Scaffold(
       appBar: AppBar(
         title: Text(titles[_currentIndex]),
