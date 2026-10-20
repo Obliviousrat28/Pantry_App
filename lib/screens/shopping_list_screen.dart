@@ -17,7 +17,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final StorageService _storageService = StorageService();
   List<InventoryItem> _shoppingItems = [];
   bool _isLoading = true;
-
+  
+  //loads the data from Firestore when the screen is initialized
   @override
   void initState() {
     super.initState();
@@ -78,6 +79,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     });
     await _storageService.deleteShoppingItem(item.itemId);
 
+    // Show SnackBar with Undo option
     if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +112,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       return;
     }
 
+    // Check and request location permissions 
     LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -122,6 +125,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       }
     }
     
+    // Handle permanently denied permissions
     if (permission == LocationPermission.deniedForever) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -130,15 +134,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       return;
     }
 
+    // Get current position and open Google Maps with nearby supermarkets
     Position position = await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
     );
 
+    // Construct the Google Maps URL for nearby supermarkets
     final googleMapsUrl = Uri.https('www.google.com', '/maps/search/', {
       'api': '1',
       'query': 'supermarket near ${position.latitude},${position.longitude}',
     });
 
+    // Launch the URL in an external application
     try {
       final launched = await launchUrl(
         googleMapsUrl,
@@ -157,6 +164,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
   }
 
+  // Build the Shopping List Screen UI
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -166,6 +174,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       );
     }
 
+    // Build the main scaffold for the Shopping List Screen
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shopping List'),
@@ -184,11 +193,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
             )
-          : ListView.builder(
+          : ListView.builder( 
               padding: const EdgeInsets.symmetric(vertical: 8.0),
               itemCount: _shoppingItems.length,
               itemBuilder: (context, index) {
                 final currentItem = _shoppingItems[index];
+                // Wrap each item in a Dismissible widget to allow swipe-to-delete functionality
                 return Dismissible(
                   key: ValueKey(currentItem.itemId),
                   direction: DismissDirection.endToStart,
@@ -212,6 +222,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 );
               },
             ),
+      // Floating action button to add new items to the shopping list
       floatingActionButton: FloatingActionButton(
         onPressed: _openAddItemDialog,
         tooltip: 'Add to Shopping List',
