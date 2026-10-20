@@ -5,6 +5,7 @@ import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
 import '../models/history_entry.dart';
 import 'notification_service.dart';
+import '../models/usage_event.dart'; 
 
 class StorageService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -120,12 +121,11 @@ class StorageService {
     return snapshot.docs.map((doc) => MealLog.fromFirestore(doc)).toList();
   }
 
-  // Saves a list of meal logs to Firestore using a batch operation, merging data for existing logs based on mealDate.
+  // Saves a list of meal logs to Firestore using a batch operation, merging by log ID to ensure uniqueness and prevent duplicates.
   Future<void> saveMealLogs(List<MealLog> logs) async {
     final batch = _firestore.batch();
     for (final log in logs) {
-      final docId = log.mealDate.millisecondsSinceEpoch.toString();
-      final docRef = _userDoc.collection('meal_logs').doc(docId);
+      final docRef = _userDoc.collection('meal_logs').doc(log.id);//Using log.id as the document ID to ensure uniqueness
       batch.set(docRef, log.toFirestore(), SetOptions(merge: true));
     }
     await batch.commit();
@@ -172,6 +172,7 @@ class StorageService {
       SetOptions(merge: true),
     );
   }
+// ================= USAGE EVENTS =================
 
   // ================= HISTORY =================
 
@@ -198,5 +199,18 @@ class StorageService {
         .limit(50)
         .get();
     return snapshot.docs.map((doc) => HistoryEntry.fromFirestore(doc)).toList();
+  // Save a usage record (used or waste) under user_events
+  Future<void> saveUsageEvent(UsageEvent event) async {
+    await _userDoc.collection('usage_events').doc(event.id).set(event.toFirestore(), SetOptions(merge: true));
+  }
+
+  // Deletes a usage event when user undoes a delete.
+  Future<void> deleteUsageEvent(String eventId) async {
+    await _userDoc.collection('usage_events').doc(eventId).delete();
+  }
+//load usage records and callers filter by date (weekly charts)
+  Future<List<UsageEvent>> loadUsageEvents() async {
+    final snapshot = await _userDoc.collection('usage_events').get();
+    return snapshot.docs.map((doc) => UsageEvent.fromFirestore(doc)).toList();
   }
 }

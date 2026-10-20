@@ -13,6 +13,7 @@ class InventoryItem {
   StorageZone storageZone;
   final String? barcode;
   bool isChecked; // Checked state for shopping list items
+  final DateTime entryDate; //when item was bought, default to now
  
   // Constructor for creating an InventoryItem instance with required and optional parameters.
   InventoryItem({
@@ -26,8 +27,9 @@ class InventoryItem {
     required this.storageZone,
     this.barcode,
     this.isChecked = false,
-  });
- 
+    DateTime? entryDate,
+  }) : entryDate = entryDate ?? DateTime.now();
+
   // Edits the properties of the inventory item based on provided parameters, allowing for partial updates.
   void edit({
     String? name,
@@ -74,6 +76,8 @@ class InventoryItem {
     'storageZone': storageZone.name,
     'barcode': barcode,
     'isChecked': isChecked, // NEW
+    //purchase date (full timestamp for unique entry ID)
+    'entryDate': Timestamp.fromDate(entryDate),
   };
  
   // Factory constructor to create an InventoryItem instance from a Firestore document snapshot.
@@ -93,6 +97,7 @@ class InventoryItem {
       ), // Default to pantry if storageZone is not found
       barcode: json['barcode'],
       isChecked: json['isChecked'] ?? false, // NEW (old docs default to false)
+      entryDate: (json['entryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),//old docs default to now
     );
   }
 }

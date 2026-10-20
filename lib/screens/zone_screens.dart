@@ -13,6 +13,7 @@ class ZoneScreen extends StatelessWidget {
     required this.onAddItem,
     required this.onEditItem,
     required this.onDeleteItem,
+    required this.onRestoreItem,//restore item callback for UNDO
   });
 
   /// The title of the screen, typically representing the storage zone.
@@ -20,7 +21,8 @@ class ZoneScreen extends StatelessWidget {
   final List<InventoryItem> items;
   final Function(InventoryItem) onAddItem;
   final Function(InventoryItem) onEditItem;
-  final Function(InventoryItem) onDeleteItem;
+  final Function(InventoryItem, String) onDeleteItem;
+  final Function(InventoryItem) onRestoreItem;
 
   /// Retrieves a list of inventory items that belong to the specified storage zone.
   List<InventoryItem> _getItemsForZone(StorageZone zone) {
@@ -87,8 +89,11 @@ class ZoneScreen extends StatelessWidget {
                           ),
                         ),
                       ]
-                    : zoneItems.map((item) {
-                      // Return a Dismissible widget for each inventory item, allowing swipe-to-delete functionality.
+                      : zoneItems.map((item) {
+                        // Remembers what the user chose in the delete prompts.
+                        String? deleteOutcome;
+
+                        // Return a Dismissible widget for each inventory item, allowing swipe-to-delete functionality.
                         return Dismissible(
                           key: ValueKey(item.itemId),
                           direction: DismissDirection.endToStart,
@@ -101,41 +106,90 @@ class ZoneScreen extends StatelessWidget {
                               color: Colors.white,
                             ),
                           ),
+
+                          // Swipe flow: cancel, delete only, or record usage.
                           confirmDismiss: (direction) async {
-                            return await showDialog<bool>(
+                            // First prompt: delete only, or record usage?
+                            final choice = await showDialog<String>(
                               context: context,
                               builder: (BuildContext context) {
                                 return AlertDialog(
-                                  title: const Text('Confirm Delete'),
-                                  content: Text(
-                                    // Show a confirmation dialog before deleting an item
-                                    'Are you sure you want to delete "${item.itemName}"?'),
+                                  title: Text('Delete "${item.itemName}"?'),
+                                  content: const Text(
+                                      'Delete removes the item only. Choose '
+                                      '"Record usage" to log waste or '
+                                      'consumption.'),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
-                                          Navigator.of(context).pop(false),
+                                          Navigator.of(context).pop(null),
                                       child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop('record'),
+                                      child: const Text('Record usage'),
                                     ),
                                     ElevatedButton(
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
                                         foregroundColor: Colors.white,
-                                      ),// Style the delete button in the confirmation dialog
+                                      ),
                                       onPressed: () =>
-                                          Navigator.of(context).pop(true),
+                                          Navigator.of(context).pop('delete'),
                                       child: const Text('Delete'),
                                     ),
                                   ],
                                 );
                               },
                             );
-                          },// Handle the deletion of an item and show a SnackBar with an undo option
+
+                            // Cancel keeps the item.
+                            if (choice == null) return false;
+
+                            // Delete only: no usage record.
+                            if (choice == 'delete') {
+                              deleteOutcome = 'none';
+                              return true;
+                            }
+
+                            // Record usage: ask what happened to the item.
+                            if (!context.mounted) return false;
+                            deleteOutcome = await showDialog<String>(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Record usage'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(null),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop('wasted'),
+                                      child: const Text('Thrown away (wasted)'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop('used'),
+                                      child: const Text('Used (consumed)'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            return deleteOutcome != null;
+                          },
+
+                          // Delete the item, then show a SnackBar with UNDO.
                           onDismissed: (direction) {
-                            onDeleteItem(item);
+                            onDeleteItem(item, deleteOutcome ?? 'none');
 
                             final messenger = ScaffoldMessenger.of(context);
                             messenger.clearSnackBars();
-                            
+
                             // Show a SnackBar to inform the user that the item has been deleted, with an option to undo the action.
                             final controller = messenger.showSnackBar(
                               SnackBar(
@@ -146,12 +200,13 @@ class ZoneScreen extends StatelessWidget {
                                   label: 'UNDO',
                                   textColor: Colors.amber,
                                   onPressed: () {
-                                    onAddItem(item);
+                                    //restore the item if the user taps UNDO
+                                    onRestoreItem(item);
                                   },
                                 ),
                               ),
                             );
-                            
+
                             // Automatically close the SnackBar after 3 seconds to prevent it from lingering on the screen.
                             Future.delayed(const Duration(seconds: 3), () {
                               controller.close();
