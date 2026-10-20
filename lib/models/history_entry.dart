@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'storage_zone.dart';
 
+// Represents one entry in the user's history, recording an item that was added to or removed from their inventory.
 class HistoryEntry
 {
   final String itemName;
@@ -9,9 +10,10 @@ class HistoryEntry
   final bool priceUnknown;
   final StorageZone storageZone;
   final DateTime expiryDate;
-  final String action;
-  final DateTime dateAdded;
+  final String action; // Either 'added' or 'removed'
+  final DateTime dateAdded; // When the action happened
 
+  // Creates a history entry with all the item details and the action that was taken.
   HistoryEntry({
     required this.itemName,
     required this.itemQuantity,
@@ -23,6 +25,7 @@ class HistoryEntry
     required this.dateAdded,
   });
 
+  // Converts the history entry into a map so it can be saved in Firestore.
   Map<String, dynamic> toFirestore()
   {
     return {
@@ -37,6 +40,7 @@ class HistoryEntry
     };
   }
 
+  // Creates a history entry from a Firestore document, using default values if any fields are missing.
   factory HistoryEntry.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc)
   {
     final data = doc.data()!;
@@ -48,9 +52,9 @@ class HistoryEntry
       storageZone: StorageZone.values.firstWhere(
         (zone) => zone.name == data['storageZone'],
         orElse: () => StorageZone.pantry,
-      ),
+      ), // Default to pantry if the storage zone is not found
       expiryDate: (data['expiryDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      action: data['action'] ?? 'added',
+      action: data['action'] ?? 'added', // Older entries without an action are treated as added
       dateAdded: (data['dateAdded'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
