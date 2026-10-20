@@ -38,7 +38,8 @@ class AddItemFormState extends State<AddItemForm> {
 
   // The currently selected storage zone for the inventory item, defaulting to fridge.
   StorageZone _selectedZone = StorageZone.fridge;
-  DateTime? selectedDate;
+  DateTime? _selectedDate; //item expiry
+  DateTime _entryDate = DateTime.now(); //default to today when item is bought
   bool isPriceUnknown = false;
   String? _scannedBarcode;
 
@@ -63,7 +64,8 @@ class AddItemFormState extends State<AddItemForm> {
           : '',
     ); // Initialize priceController with initialData's price if provided, otherwise empty string
     _selectedZone = widget.initialData?.storageZone ?? StorageZone.fridge;
-    selectedDate = widget.initialData?.expiryDate ?? DateTime.now();
+    _selectedDate = widget.initialData?.expiryDate ?? DateTime.now();
+    _entryDate = widget.initialData?.entryDate ?? DateTime.now(); //keep item's original purchase date
     isPriceUnknown = widget.initialData?.priceUnknown ?? false;
     _scannedBarcode = widget.initialData?.barcode;
   }
@@ -153,7 +155,7 @@ class AddItemFormState extends State<AddItemForm> {
         qtyController.text = best.suggestedQuantity.toString();
         // pre-fill the expiry with Gemini's shelf life estimate, if it gave one
         if (best.estimatedExpiryDate != null) {
-          selectedDate = best.estimatedExpiryDate;
+          _selectedDate = best.estimatedExpiryDate;
         }
       } else if (code != null && nameController.text.isEmpty) {
         nameController.text = lookedUpName ?? code;
@@ -186,6 +188,17 @@ class AddItemFormState extends State<AddItemForm> {
     if (_formKey.currentState!.validate()) {
       final double parsedQty = double.parse(qtyController.text);
       final double parsedPrice = isPriceUnknown ? 0.0 : double.parse(priceController.text);
+      //chosen day with current time of day so two items bought on the same day have different timestamps
+      final now = DateTime.now();
+      final entryDateTime = DateTime(
+        _entryDate.year,
+        _entryDate.month,
+        _entryDate.day,
+        now.hour,
+        now.minute,
+        now.second,
+        now.millisecond,
+      );
 
       // Create a new InventoryItem with the provided data
       final newItem = InventoryItem(
@@ -195,9 +208,11 @@ class AddItemFormState extends State<AddItemForm> {
         itemQuantity: parsedQty,
         price: parsedPrice,
         priceUnknown: isPriceUnknown,
-        expiryDate: selectedDate ?? DateTime.now(),
+        expiryDate: _selectedDate ?? DateTime.now(),
         storageZone: _selectedZone,
         barcode: _scannedBarcode,
+        //editing still keeps the original data, 
+        entryDate: widget.initialData?.entryDate ?? entryDateTime,
       );
 
       // Invoke the onAddItem callback with the new InventoryItem and close the dialog
@@ -303,9 +318,9 @@ class AddItemFormState extends State<AddItemForm> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                selectedDate == null
+                _selectedDate == null
                     ? 'No Date Chosen'
-                    : 'Expiry: ${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                    : 'Expiry: ${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
                 style: const TextStyle(fontWeight: FontWeight.w500),
                 // Display the selected expiry date in a readable format, or indicate that no date has been chosen.
               ),
@@ -315,19 +330,48 @@ class AddItemFormState extends State<AddItemForm> {
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: selectedDate ?? DateTime.now(),
+                    initialDate: _selectedDate ?? DateTime.now(),
                     firstDate: DateTime(2025),
                     lastDate: DateTime(2030),
                   );// Show a date picker dialog for selecting the expiry date, with the initial date set to the currently selected date or today's date, and a range from 2025 to 2030.
                   if (picked != null) {
                     setState(() {
-                      selectedDate = picked;
+                      _selectedDate = picked;
                     });
                   }
                 },
               ),
             ],
           ),
+           // Date bought picker. Only shown when adding a new item.
+          if (widget.initialData == null)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Bought: ${_entryDate.day}/${_entryDate.month}/${_entryDate.year}',
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.event, size: 18),
+                  label: const Text('Pick Date'),
+                  onPressed: () async {
+                    // Only past dates and today are allowed.
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _entryDate,
+                      firstDate: DateTime(2025),
+                      lastDate: DateTime.now(),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _entryDate = picked;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
         ],
       ),
     );

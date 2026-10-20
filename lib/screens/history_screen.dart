@@ -5,11 +5,13 @@ import '../models/history_entry.dart';
 import '../models/inventory_item.dart';
 import '../services/storage_service.dart';
 
-// The HistoryScreen displays a list of history entries, allowing users to re-add items to their inventory or add them to their shopping list.
+// Screen that shows the user's history of items added to and removed from their inventory, and lets them re-add items.
 class HistoryScreen extends StatefulWidget
 {
+  // Function from the navigation screen used to add an item back into the inventory
   final Function(InventoryItem) onAddItem;
 
+  // Creates the history screen with the function used for re-adding items.
   const HistoryScreen({super.key, required this.onAddItem});
 
   @override
@@ -23,6 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen>
   List<HistoryEntry> _history = [];
   bool _isLoading = true;
 
+  // Loads the history as soon as the screen is opened.
   @override
   void initState()
   {
@@ -30,7 +33,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     _loadHistory();
   }
 
-  // Loads the history entries from the storage service and updates the state accordingly, handling any errors that may occur during the loading process.
+  // Loads the user's history from Firestore and updates the screen, showing an empty list if loading fails.
   Future<void> _loadHistory() async
   {
     List<HistoryEntry> entries = [];
@@ -43,6 +46,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       entries = [];
     }
 
+    // Stops if the user has left the screen before loading finished
     if (!mounted)
     {
       return;
@@ -55,7 +59,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     });
   }
 
-  // Formats a DateTime object into a string with the format "dd/MM/yyyy".
+  // Formats a date as day/month/year, e.g. 16/10/2026.
   String _formatDate(DateTime date)
   {
     String day = date.day.toString().padLeft(2, '0');
@@ -63,9 +67,10 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '$day/$month/${date.year}';
   }
 
-  // Formats a DateTime object into a string with the format "dd/MM/yyyy at hh:mm AM/PM".
+  // Formats a date and time in 12-hour format with AM/PM, e.g. 16/10/2026 at 2:27 AM.
   String _formatDateTime(DateTime date)
   {
+    // Converts 24-hour time to 12-hour time, where 0 becomes 12
     int hour = date.hour % 12;
     if (hour == 0)
     {
@@ -82,14 +87,14 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '${_formatDate(date)} at $hour:$minute $period';
   }
 
-  // Returns the name of the storage zone for a history entry, capitalizing the first letter.
+  // Returns the storage zone name with a capital first letter, e.g. Fridge.
   String _zoneName(HistoryEntry entry)
   {
     String name = entry.storageZone.name;
     return name[0].toUpperCase() + name.substring(1);
   }
 
-  // Returns a formatted string representing the price of a history entry, indicating if the price is unknown or displaying the price per unit.
+  // Returns the price per item as text, or 'Price unknown' if no price was entered.
   String _priceText(HistoryEntry entry)
   {
     if (entry.priceUnknown)
@@ -99,7 +104,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return '\$${entry.price.toStringAsFixed(2)} each';
   }
 
-  // Calculates the total price for a history entry, returning a formatted string or indicating if the price is unknown.
+  // Returns the total cost (price x quantity) as text, matching what is taken off the budget.
   String _totalText(HistoryEntry entry)
   {
     if (entry.priceUnknown)
@@ -110,7 +115,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return 'Total \$${total.toStringAsFixed(2)}';
   }
 
-  // Confirms with the user before re-adding an item from the history back to the inventory, displaying relevant details and options to cancel or proceed.
+  // Shows a confirmation box with the item's details before re-adding it to the inventory.
   Future<void> _confirmReAdd(HistoryEntry entry) async
   {
     bool? confirmed = await showDialog<bool>(
@@ -140,6 +145,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       },
     );
 
+    // Only re-adds the item if the user pressed Add
     if (confirmed != true || !mounted)
     {
       return;
@@ -148,11 +154,12 @@ class _HistoryScreenState extends State<HistoryScreen>
     _reAddItem(entry);
   }
 
-  // Re-adds the item from the history entry back to the inventory and updates the history with a new entry indicating the addition.
+  // Creates a new inventory item with the same details as the history entry and adds it back to the inventory.
   void _reAddItem(HistoryEntry entry)
   {
     String userId = FirebaseAuth.instance.currentUser?.uid ?? 'dev_test_user';
 
+    // Gives the item a new ID so it is saved as a separate inventory item
     InventoryItem item = InventoryItem(
       itemId: const Uuid().v4(),
       userId: userId,
@@ -164,8 +171,10 @@ class _HistoryScreenState extends State<HistoryScreen>
       storageZone: entry.storageZone,
     );
 
+    // Uses the same add function as the + button, so the spend log and budget are updated too
     widget.onAddItem(item);
 
+    // Shows the new 'added' entry at the top of the list straight away
     HistoryEntry newEntry = HistoryEntry(
       itemName: entry.itemName,
       itemQuantity: entry.itemQuantity,
@@ -215,7 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     // snackbar as before
   }
 
-  // Builds the main UI of the history screen, displaying a loading indicator, a message for empty history, or a list of history entries with options to re-add or add to shopping list.
+  // Builds the history screen. The title bar is provided by the main navigation screen.
   @override
   Widget build(BuildContext context)
   {
@@ -224,7 +233,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
-  // Constructs the body of the history screen, handling loading state, empty history, and displaying a list of history entries with relevant details and actions.
+  // Shows a loading spinner, an empty message, or the list of history entries.
   Widget _buildBody()
   {
     if (_isLoading)
@@ -254,6 +263,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         HistoryEntry entry = _history[index];
         bool wasRemoved = entry.action == 'removed';
 
+        // Shows 'Added' in green or 'Removed' in red
         String actionText = 'Added';
         Color actionColour = Colors.green;
         if (wasRemoved)
@@ -271,6 +281,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Item name and whether it was added or removed
                       Row(
                         children: [
                           Text(
@@ -285,9 +296,12 @@ class _HistoryScreenState extends State<HistoryScreen>
                         ],
                       ),
                       const SizedBox(height: 4),
+                      // Quantity, price and total cost
                       Text('Qty: ${entry.itemQuantity.toInt()}  •  ${_priceText(entry)}  •  ${_totalText(entry)}'),
+                      // Storage zone and expiry date
                       Text('${_zoneName(entry)}  •  Expires: ${_formatDate(entry.expiryDate)}'),
                       const SizedBox(height: 4),
+                      // When the item was added or removed
                       Text(
                         '$actionText on ${_formatDateTime(entry.dateAdded)}',
                         style: const TextStyle(color: Colors.grey),

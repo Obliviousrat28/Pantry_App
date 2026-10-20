@@ -12,6 +12,7 @@ import '../models/user.dart';
 import 'settings_screen.dart';
 import 'history_screen.dart';
 import 'shopping_list_screen.dart';
+import '../models/usage_event.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -90,7 +91,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         MealLog(
           mealName: '${item.itemName} (x${item.itemQuantity.toInt()})',
           mealPrice: totalCost.toStringAsFixed(2),
-          mealDate: DateTime.now(),
+          //chosen purchase date, defaults to now
+          mealDate: item.entryDate,
+          //default to 'grocery' for items added to inventory.
+          source: 'grocery',
         ),
       );
       
@@ -100,6 +104,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    // Records the added item in the user's history
     await _storageService.addHistoryItem(item, 'added');
   }
 
@@ -116,12 +121,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
+  // Updates an existing inventory item and keeps the budget and the
+  // matching spending entry in sync with the new price and quantity.
   void _editItem(InventoryItem updatedItem) async {
+    // Find the item being edited; stop if it no longer exists.
     final index = inventoryItems.indexWhere((e) => e.itemId == updatedItem.itemId);
     if (index == -1) return;
 
     final oldItem = inventoryItems[index];
 
+    // Work out how much the total cost changed (unknown prices count as 0).
     final double oldUnitCost = oldItem.priceUnknown ? 0.0 : oldItem.price;
     final double oldTotalCost = oldUnitCost * oldItem.itemQuantity;
 
@@ -132,41 +141,98 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     
     // Update the inventory item, meal logs, and remaining budget
     setState(() {
+      // Replace the item and adjust the remaining budget by the difference.
       inventoryItems[index] = updatedItem;
       remainingBudget -= costDifference;
 
+      // Find the spending entry created when this item was added, using
+      // its old display name, e.g. "Milk (x2)".
       final oldFormattedName = '${oldItem.itemName} (x${oldItem.itemQuantity.toInt()})';
       final logIndex = mealLogs.indexWhere(
         (log) => log.mealName == oldFormattedName,
       );
 
+<<<<<<< HEAD
       // If a corresponding meal log is found, update it with the new item details
+=======
+      // Rebuild that entry with the new name and price. The original date
+      // and source are kept, so an edited grocery item stays a grocery.
+>>>>>>> origin/main
       if (logIndex != -1) {
         mealLogs[logIndex] = MealLog(
+          id: mealLogs[logIndex].id,// Preserve the original ID for Firestore
           mealName: '${updatedItem.itemName} (x${updatedItem.itemQuantity.toInt()})',
           mealPrice: newTotalCost.toStringAsFixed(2),
           mealDate: mealLogs[logIndex].mealDate,
+          source: mealLogs[logIndex].source,
         );
       }
     });
 
+    // Save the updated item, spending entries, and budget.
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
   }
 
+<<<<<<< HEAD
   // Scenario 3: Deleting an Inventory Item
   void _deleteItem(InventoryItem item) async {
+=======
+  // Removes an item. If the user said what happened to it ('used' or
+  // 'wasted'), a usage record is saved too; 'none' just deletes it.
+  void _deleteItem(InventoryItem item, String outcome) async {
+    final double unitCost = item.priceUnknown ? 0.0 : item.price;
+
+>>>>>>> origin/main
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
     
     // Call the dedicated deletion method using the item's unique ID
     await _storageService.deleteItem(item.itemId);
+    // Records the removed item in the user's history
     await _storageService.addHistoryItem(item, 'removed');
+
+    // Both writes start straight away so a slow connection can't make
+    // one wait for the other.
+    final deletion = _storageService.deleteItem(item.itemId);
+    final recording = outcome == 'none'
+        ? Future<void>.value()
+        : _storageService.saveUsageEvent(
+            UsageEvent(
+              id: 'del_${item.itemId}',
+              itemName: item.itemName,
+              quantity: item.itemQuantity,
+              value: unitCost * item.itemQuantity,
+              outcome: outcome,
+              origin: 'manual',
+              date: DateTime.now(),
+            ),
+          );
+    await Future.wait([deletion, recording]);
   }
 
+<<<<<<< HEAD
   // Opens a dialog to add a new inventory item or log a meal, depending on the user's choice.
+=======
+ // UNDO for a delete: puts the item back in the inventory and removes
+  // its usage record. No new spending entry is made and the budget is
+  // not touched, because the original purchase is still on record.
+  void _restoreItem(InventoryItem item) async {
+    setState(() {
+      inventoryItems.add(item);
+    });
+
+    // Both writes start straight away so neither waits for the other.
+    final saving = _storageService.saveItems(inventoryItems);
+    final removing = _storageService.deleteUsageEvent('del_${item.itemId}');
+    await Future.wait([saving, removing]);
+  }
+
+
+ // Opens the dialog for adding an item or logging a meal.
+>>>>>>> origin/main
   void _openAddModal() {
     showDialog(
       context: context,
@@ -177,7 +243,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+<<<<<<< HEAD
   // Updates the weekly budget goal and adjusts the remaining budget accordingly.
+=======
+>>>>>>> origin/main
   void _updateBudgetGoal(double newGoal) async {
     final spentSoFar = weeklyBudgetGoal - remainingBudget;
 
@@ -233,12 +302,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         onAddItem: _handleAddItem,
         onEditItem: _editItem,
         onDeleteItem: _deleteItem,
+<<<<<<< HEAD
       ), // Inventory Screen
       BudgetScreen(
         weeklyBudgetGoal: weeklyBudgetGoal,
         mealLogs: mealLogs,
       ), // Budget Screen
+=======
+        onRestoreItem: _restoreItem,
+      ),
+      BudgetScreen(
+        weeklyBudgetGoal: weeklyBudgetGoal,
+        mealLogs: mealLogs,
+        inventoryItems: inventoryItems,
+      ),
+>>>>>>> origin/main
       const RecipesScreen(),
+      // History screen uses the same add function so re-added items update the spend log and budget
       HistoryScreen(
         onAddItem: _handleAddItem,
       ),// History Screen
