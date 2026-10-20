@@ -10,6 +10,7 @@ import 'budget_screen.dart';
 import 'zone_screens.dart';
 import '../models/user.dart';
 import 'settings_screen.dart';
+import 'history_screen.dart';
 import 'shopping_list_screen.dart';
 import '../models/usage_event.dart';
 
@@ -23,6 +24,10 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   // Instantiate the storage service instance
   final StorageService _storageService = StorageService();
+
+  // Screen I want the add item button to show up in
+  static const int _inventoryTab = 0;
+  static const int _budgetTab = 1;
 
   int _currentIndex = 0;
 
@@ -99,6 +104,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     await _storageService.saveItems(inventoryItems);
     await _storageService.saveMealLogs(mealLogs);
     await _storageService.saveRemainingBudget(remainingBudget);
+    await _storageService.addHistoryItem(item, 'added');
   }
 
   // Scenario 2: Logging a Meal Directly
@@ -171,6 +177,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     setState(() {
       inventoryItems.removeWhere((e) => e.itemId == item.itemId);
     });
+    
+    // Call the dedicated deletion method using the item's unique ID
+    await _storageService.deleteItem(item.itemId);
+    await _storageService.addHistoryItem(item, 'removed');
 
     // Both writes start straight away so a slow connection can't make
     // one wait for the other.
@@ -258,6 +268,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       'Inventory',
       'Budget',
       'Recipes',
+      'History',
       'Settings',
     ];
 
@@ -276,6 +287,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         inventoryItems: inventoryItems,
       ),
       const RecipesScreen(),
+      HistoryScreen(
+        onAddItem: _handleAddItem,
+      ),
       SettingsScreen(
         user: currentUser,
         weeklyBudgetGoal: weeklyBudgetGoal,
@@ -296,7 +310,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (ctx) => const ShoppingListScreen(),
+                    builder: (ctx) => ShoppingListScreen(onAddItem: _handleAddItem),
                   ),
                 );
               },
@@ -304,10 +318,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ],
       ),
       body: screens[_currentIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openAddModal,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: (_currentIndex == _inventoryTab || _currentIndex == _budgetTab)
+        ? FloatingActionButton(
+            onPressed: _openAddModal,
+            child: const Icon(Icons.add),
+          )
+        : null,
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {

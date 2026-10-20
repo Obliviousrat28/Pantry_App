@@ -3,11 +3,13 @@ import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 import '../widgets/item_add_dialog.dart';
 import '../widgets/item_card.dart';
-import 'shopping_list_screen.dart'; // Make sure to import your new screen
+import 'shopping_list_screen.dart';
 
-// A screen that displays the inventory items grouped by their storage zones.
+// The InventoryScreen displays a list of inventory items grouped by storage zones (Fridge, Freezer, Pantry).
 class InventoryScreen extends StatefulWidget {
-  const InventoryScreen({super.key});
+  final Function(InventoryItem) onAddItem;
+
+  const InventoryScreen({super.key, required this.onAddItem, });
 
   @override
   State<InventoryScreen> createState() => _InventoryScreenState();
@@ -66,7 +68,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (ctx) => const ShoppingListScreen(),
+                builder: (ctx) => ShoppingListScreen(onAddItem: widget.onAddItem),
               ),
             );
           },

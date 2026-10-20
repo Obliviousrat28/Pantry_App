@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/inventory_item.dart';
 import '../models/meal_log.dart';
+import '../models/history_entry.dart';
 import 'notification_service.dart';
 import '../models/usage_event.dart'; 
 
@@ -173,6 +174,31 @@ class StorageService {
   }
 // ================= USAGE EVENTS =================
 
+  // ================= HISTORY =================
+
+  Future<void> addHistoryItem(InventoryItem item, String action) async
+  {
+    HistoryEntry entry = HistoryEntry(
+      itemName: item.itemName,
+      itemQuantity: item.itemQuantity,
+      price: item.price,
+      priceUnknown: item.priceUnknown,
+      storageZone: item.storageZone,
+      expiryDate: item.expiryDate,
+      action: action,
+      dateAdded: DateTime.now(),
+    );
+    await _userDoc.collection('history').add(entry.toFirestore());
+  }
+
+  Future<List<HistoryEntry>> loadHistory() async
+  {
+    final snapshot = await _userDoc
+        .collection('history')
+        .orderBy('dateAdded', descending: true)
+        .limit(50)
+        .get();
+    return snapshot.docs.map((doc) => HistoryEntry.fromFirestore(doc)).toList();
   // Save a usage record (used or waste) under user_events
   Future<void> saveUsageEvent(UsageEvent event) async {
     await _userDoc.collection('usage_events').doc(event.id).set(event.toFirestore(), SetOptions(merge: true));

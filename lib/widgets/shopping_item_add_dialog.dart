@@ -3,6 +3,7 @@ import '../models/inventory_item.dart';
 import '../models/storage_zone.dart';
 // import '../services/barcode_scanner.dart'; // Commented out barcode scanner service
 
+// A dialog widget for adding or editing shopping list items.
 class ShoppingItemAddDialog extends StatefulWidget {
   final Function(InventoryItem) onAddItem;
   final InventoryItem? initialData;
@@ -19,6 +20,7 @@ class ShoppingItemAddDialog extends StatefulWidget {
   State<ShoppingItemAddDialog> createState() => _ShoppingItemAddDialogState();
 }
 
+// The state class for the ShoppingItemAddDialog, managing form input and submission.
 class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController nameController;
@@ -29,7 +31,6 @@ class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
   // String? _scannedBarcode; // Commented out barcode variable
 
   // final BarcodeScannerService _barcodeService = BarcodeScannerService(); // Commented out barcode service instance
-
   @override
   void initState() {
     super.initState();
@@ -50,6 +51,7 @@ class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
     // _scannedBarcode = widget.initialData?.barcode;
   }
 
+  // Dispose of the controllers when the widget is removed from the widget tree
   @override
   void dispose() {
     nameController.dispose();
@@ -73,6 +75,7 @@ class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
   }
   */
 
+  // Submit the form and create a new InventoryItem
   void _submit() {
     if (_formKey.currentState!.validate()) {
       final double parsedPrice = double.tryParse(priceController.text) ?? 0.0;
@@ -95,6 +98,7 @@ class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
     }
   }
 
+  // Commented out barcode scanning method
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -107,7 +111,7 @@ class _ShoppingItemAddDialogState extends State<ShoppingItemAddDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               /*
-              // Commented out Scan Barcode button
+              // Commented out Scan Barcode button sue to it not being needed but it can be used 
               OutlinedButton.icon(
                 onPressed: _scanBarcode,
                 icon: const Icon(Icons.qr_code_scanner),
